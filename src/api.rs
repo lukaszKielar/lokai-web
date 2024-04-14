@@ -1,11 +1,11 @@
-use leptos::{logging, server, ServerFnError};
+use leptos::{logging, server, use_context, ServerFnError};
 use serde::{Deserialize, Serialize};
 
 use crate::models::{Conversation, Message};
 
 // const MODEL: &str = "llama2:7b";
-// const MODEL: &str = "mistral:7b";
-const MODEL: &str = "tinyllama";
+const MODEL: &str = "mistral:7b";
+// const MODEL: &str = "tinyllama";
 
 // TODO: I need to save a context of the chat into DB
 // that would help when user decided to come back to old conversation
@@ -33,8 +33,8 @@ struct ChatParams {
 // TODO: this function should take id of the conversation, prompt and context (history of conversation)
 #[server(Chat, "/api/chat")]
 pub async fn chat(conversation: Conversation) -> Result<Message, ServerFnError> {
-    // TODO: move client to axum state
-    let client = reqwest::Client::new();
+    // TODO: handle lack of context
+    let client = use_context::<reqwest::Client>().expect("reqwest.Client not found");
     let params = ChatParams {
         model: default_model(),
         messages: conversation.messages,

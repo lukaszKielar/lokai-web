@@ -4,7 +4,11 @@ pub mod components;
 pub mod error_template;
 #[cfg(feature = "ssr")]
 pub mod fileserv;
+#[cfg(feature = "ssr")]
+pub mod handlers;
 pub mod models;
+#[cfg(feature = "ssr")]
+pub mod state;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

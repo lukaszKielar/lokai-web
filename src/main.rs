@@ -1,11 +1,21 @@
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
+    use axum::routing::get;
     use axum::Router;
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use lokai::app::*;
+    use lokai::app::App;
     use lokai::fileserv::file_and_error_handler;
+    use lokai::handlers::{leptos_routes_handler, server_fn_handler};
+    use lokai::state::AppState;
+    use sqlx::sqlite::SqlitePoolOptions;
+
+    // TODO: add DB pool
+    // let pool = SqlitePoolOptions::new()
+    //     .connect("sqlite:db.sqlite")
+    //     .await
+    //     .expect("Could not make pool.");
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -17,11 +27,23 @@ async fn main() {
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
 
+    // TODO: add DB pool
+    let app_state = AppState {
+        leptos_options,
+        // pool: pool,
+        reqwest_client: reqwest::Client::new(),
+        routes: routes.clone(),
+    };
+
     // build our application with a route
     let app = Router::new()
-        .leptos_routes(&leptos_options, routes, App)
+        .route(
+            "/api/*fn_name",
+            get(server_fn_handler).post(server_fn_handler),
+        )
+        .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .fallback(file_and_error_handler)
-        .with_state(leptos_options);
+        .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     logging::log!("listening on http://{}", &addr);

@@ -1,14 +1,12 @@
 use leptos::ev::SubmitEvent;
 use leptos::{component, create_signal, event_target_value, view, Action, IntoView, ServerFnError};
 
-use crate::api::GenerateResponse;
+use crate::models::Message;
 
 // TODO: disable button when we wait for response
 // TODO: make button grey while waiting for response
 #[component]
-pub fn PromptArea(
-    send_prompt: Action<String, Result<GenerateResponse, ServerFnError>>,
-) -> impl IntoView {
+pub fn PromptArea(send_prompt: Action<String, Result<Message, ServerFnError>>) -> impl IntoView {
     let (prompt, set_prompt) = create_signal(String::new());
 
     let on_submit = move |ev: SubmitEvent| {

@@ -1,8 +1,7 @@
-use crate::api::replai;
+use crate::api::chat;
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
-use crate::models::conversation::Conversation;
-use crate::models::message::Message;
+use crate::models::{Conversation, Message};
 
 use leptos::*;
 use leptos_meta::*;
@@ -12,32 +11,22 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
+    // TODO: read conversation from DB
     let (conversation, set_conversation) = create_signal(Conversation::new());
 
     // TODO: throw an error when prompt is empty
     let send_prompt = create_action(move |prompt: &String| {
         let prompt = prompt.to_owned();
-        let human_msg = Message::human(prompt.clone());
-        set_conversation.update(move |c| c.append_message(human_msg));
+        let user_message = Message::user(prompt.clone());
+        set_conversation.update(move |c| c.append_message(user_message));
 
-        replai(prompt, conversation().context)
-    });
-
-    create_effect(move |_| {
-        if let Some(_) = send_prompt.input().get() {
-            let assistant_message = Message::assistant("...".to_string());
-
-            set_conversation.update(move |c| c.append_message(assistant_message))
-        }
+        chat(conversation())
     });
 
     // TODO: disable submit button when we're waiting for server's response
     create_effect(move |_| {
         if let Some(Ok(assistant_response)) = send_prompt.value().get() {
-            set_conversation.update(move |c| {
-                c.modify_last_msg(assistant_response.response);
-                c.context.replace(assistant_response.context);
-            });
+            set_conversation.update(move |c| c.append_message(assistant_response));
         }
     });
 

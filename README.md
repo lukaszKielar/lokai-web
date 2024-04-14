@@ -94,11 +94,16 @@ This template itself is released under the Unlicense. You should replace the LIC
 
 # Lokai
 
-## Ollama
+## Development
+
+- Start ollama
 
 ```bash
-docker run -d -v ~/.docker-share/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-docker exec -it ollama ollama serve
+ollama serve
+# OR
+docker run -v ~/.docker-share/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama # runs once
+docker stop ollama
+docker start ollama
 ```
 
 ## Troubleshooting

@@ -23,6 +23,13 @@
 		"editor.defaultFormatter": "rust-lang.rust-analyzer",
 		"editor.formatOnSave": true
 	},
+	"[sql]": {
+		"editor.codeActionsOnSave": {
+			"source.fixAll": "always",
+			"source.organizeImports": "always"
+		},
+		"editor.formatOnSave": true
+	},
 	"[toml]": {
 		"editor.codeActionsOnSave": {
 			"source.fixAll": "always",
@@ -56,6 +63,7 @@
 		"--rustfmt"
 	],
 	"rust-analyzer.showUnlinkedFileNotification": false,
+	"sqltools.useNodeRuntime": true,
 	"tabby.api.endpoint": "http://host.docker.internal:8080",
 	"tabby.inlineCompletion.triggerMode": "manual",
 	"tabby.usage.anonymousUsageTracking": true,

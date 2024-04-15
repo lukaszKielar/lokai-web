@@ -63,6 +63,14 @@
 		"--rustfmt"
 	],
 	"rust-analyzer.showUnlinkedFileNotification": false,
+	"sqltools.connections": [
+		{
+			"database": "db.sqlite3",
+			"driver": "SQLite",
+			"name": "localhost",
+			"previewLimit": 50
+		}
+	],
 	"sqltools.useNodeRuntime": true,
 	"tabby.api.endpoint": "http://host.docker.internal:8080",
 	"tabby.inlineCompletion.triggerMode": "manual",

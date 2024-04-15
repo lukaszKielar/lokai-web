@@ -1,6 +1,8 @@
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
+    use std::env;
+
     use axum::routing::get;
     use axum::Router;
     use leptos::*;
@@ -10,12 +12,13 @@ async fn main() {
     use lokai::handlers::{leptos_routes_handler, server_fn_handler};
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
+    use sqlx::SqlitePool;
 
-    // TODO: add DB pool
-    // let pool = SqlitePoolOptions::new()
-    //     .connect("sqlite:db.sqlite")
-    //     .await
-    //     .expect("Could not make pool.");
+    let db_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
+    let pool: SqlitePool = SqlitePoolOptions::new()
+        .connect(&db_url)
+        .await
+        .expect("Could not make pool.");
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -27,10 +30,9 @@ async fn main() {
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
 
-    // TODO: add DB pool
     let app_state = AppState {
         leptos_options,
-        // pool: pool,
+        pool: pool,
         reqwest_client: reqwest::Client::new(),
         routes: routes.clone(),
     };

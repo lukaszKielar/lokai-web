@@ -8,14 +8,13 @@ use leptos_axum::handle_server_fns_with_context;
 use crate::app::App;
 use crate::state::AppState;
 
-// TODO: add DB pool
 pub async fn server_fn_handler(
     State(app_state): State<AppState>,
     request: Request<AxumBody>,
 ) -> impl IntoResponse {
     handle_server_fns_with_context(
         move || {
-            // provide_context(app_state.pool.clone());
+            provide_context(app_state.pool.clone());
             provide_context(app_state.reqwest_client.clone());
         },
         request,
@@ -23,7 +22,6 @@ pub async fn server_fn_handler(
     .await
 }
 
-// TODO: add DB pool
 pub async fn leptos_routes_handler(
     State(app_state): State<AppState>,
     req: Request<AxumBody>,
@@ -32,7 +30,7 @@ pub async fn leptos_routes_handler(
         app_state.leptos_options.clone(),
         app_state.routes.clone(),
         move || {
-            // provide_context(app_state.pool.clone());
+            provide_context(app_state.pool.clone());
             provide_context(app_state.reqwest_client.clone());
         },
         App,

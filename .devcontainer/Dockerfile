@@ -20,7 +20,7 @@ RUN cargo install sqlx-cli --no-default-features --features native-tls,sqlite
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
    && apt-get install -y nodejs
 
-RUN apt-get install sqlite3
+RUN npm install sqlite3@5.1.1
 
 USER vscode
 

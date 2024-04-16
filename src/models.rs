@@ -47,7 +47,7 @@ pub struct Message {
 impl Message {
     fn new(role: Role, content: String, conversation_id: Uuid) -> Self {
         Self {
-            id: Uuid::now_v7(),
+            id: Uuid::new_v4(),
             role: role.to_string(),
             content,
             conversation_id,
@@ -73,14 +73,24 @@ pub struct Conversation {
 }
 
 impl Conversation {
-    pub fn new() -> Self {
+    pub fn new(id: Uuid) -> Self {
         Self {
-            id: Uuid::now_v7(),
+            id: id,
             messages: Vec::new(),
         }
     }
 
-    pub fn append_message(&mut self, message: Message) {
+    pub fn push_user_message(&mut self, content: String) {
+        let message = Message::new(Role::User, content, self.id);
+        self.push_message(message);
+    }
+
+    pub fn push_assistant_message(&mut self, content: String) {
+        let message = Message::new(Role::Assistant, content, self.id);
+        self.push_message(message);
+    }
+
+    fn push_message(&mut self, message: Message) {
         self.messages.push(message)
     }
 

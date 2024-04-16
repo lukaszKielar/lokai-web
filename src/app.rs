@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::api::chat;
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
@@ -5,31 +7,32 @@ use crate::models::{Conversation, Message};
 
 use leptos::*;
 use leptos_meta::*;
+use uuid::Uuid;
 
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+    logging::log!("loading");
+
+    let conversation_id = Uuid::from_str("8cd22e2e-1e82-4130-a000-c47adfedd1d5").unwrap();
 
     // TODO: read conversation from DB
-    let (conversation, set_conversation) = create_signal(Conversation::new());
+    let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
 
     // TODO: throw an error when prompt is empty
     let send_prompt = create_action(move |prompt: &String| {
-        let prompt = prompt.to_owned();
-        let user_message = Message::user(prompt.clone(), conversation().id);
-        {
-            let user_message = user_message.clone();
-            set_conversation.update(move |c| c.append_message(user_message));
-        }
-
-        chat(conversation(), user_message)
+        logging::log!("preparing to send a message");
+        let user_message = Message::user(prompt.to_owned(), conversation_id);
+        let user_message_content = user_message.clone().content;
+        set_conversation.update(move |c| c.push_user_message(user_message_content));
+        chat(conversation_id, user_message)
     });
 
     // TODO: disable submit button when we're waiting for server's response
     create_effect(move |_| {
         if let Some(Ok(assistant_response)) = send_prompt.value().get() {
-            set_conversation.update(move |c| c.append_message(assistant_response));
+            set_conversation.update(move |c| c.push_assistant_message(assistant_response.content));
         }
     });
 

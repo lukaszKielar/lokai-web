@@ -14,7 +14,7 @@ pub async fn server_fn_handler(
 ) -> impl IntoResponse {
     handle_server_fns_with_context(
         move || {
-            provide_context(app_state.pool.clone());
+            provide_context(app_state.db_pool.clone());
             provide_context(app_state.reqwest_client.clone());
         },
         request,
@@ -30,7 +30,7 @@ pub async fn leptos_routes_handler(
         app_state.leptos_options.clone(),
         app_state.routes.clone(),
         move || {
-            provide_context(app_state.pool.clone());
+            provide_context(app_state.db_pool.clone());
             provide_context(app_state.reqwest_client.clone());
         },
         App,

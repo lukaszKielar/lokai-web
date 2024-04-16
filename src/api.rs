@@ -16,6 +16,8 @@ mod db {
 
     use crate::models::{Conversation, Message};
 
+    // TODO: save conversation if not exist
+
     pub async fn get_conversation(
         pool: SqlitePool,
         conversation_id: Uuid,
@@ -132,18 +134,17 @@ pub async fn chat(
     use leptos::{logging, use_context};
     use reqwest;
     use sqlx::SqlitePool;
-    use tokio::spawn;
 
     logging::log!("got request");
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let db_pool_clone = db_pool.clone();
+    let _ = save_message(db_pool_clone, user_message, conversation_id).await;
+
+    let db_pool_clone = db_pool.clone();
     let conversation = get_conversation(db_pool_clone, conversation_id)
         .await
         .unwrap();
-
-    let db_pool_clone = db_pool.clone();
-    let _ = spawn(async move { save_message(db_pool_clone, user_message, conversation_id) }).await;
 
     // TODO: handle lack of context
     let client = use_context::<reqwest::Client>().expect("reqwest.Client not found");
@@ -172,8 +173,7 @@ pub async fn chat(
     let assistant_message = Message::assistant(response.message.content, conversation_id);
 
     let assistant_message_clone = assistant_message.clone();
-    let _ =
-        spawn(async move { save_message(db_pool, assistant_message_clone, conversation_id) }).await;
+    let _ = save_message(db_pool, assistant_message_clone, conversation_id).await;
 
     Ok(assistant_message)
 }

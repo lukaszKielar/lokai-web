@@ -17,10 +17,13 @@ pub fn App() -> impl IntoView {
     // TODO: throw an error when prompt is empty
     let send_prompt = create_action(move |prompt: &String| {
         let prompt = prompt.to_owned();
-        let user_message = Message::user(prompt.clone());
-        set_conversation.update(move |c| c.append_message(user_message));
+        let user_message = Message::user(prompt.clone(), conversation().id);
+        {
+            let user_message = user_message.clone();
+            set_conversation.update(move |c| c.append_message(user_message));
+        }
 
-        chat(conversation())
+        chat(conversation(), user_message)
     });
 
     // TODO: disable submit button when we're waiting for server's response

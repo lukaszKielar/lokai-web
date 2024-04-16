@@ -15,7 +15,7 @@ pub fn ConversationArea(conversation: ReadSignal<Conversation>) -> impl IntoView
                 conversation()
                     .iter()
                     .map(move |msg| {
-                        let message_class = match msg.role {
+                        let message_class = match Role::from(msg.role.as_ref()) {
                             Role::User => USER_MESSAGE_CLASS,
                             Role::Assistant => ASSISTANT_MESSAGE_CLASS,
                             _ => panic!("system message not supported yet"),

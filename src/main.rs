@@ -15,7 +15,7 @@ async fn main() {
     use sqlx::SqlitePool;
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
-    let pool: SqlitePool = SqlitePoolOptions::new()
+    let db_pool: SqlitePool = SqlitePoolOptions::new()
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
@@ -32,7 +32,7 @@ async fn main() {
 
     let app_state = AppState {
         leptos_options,
-        pool: pool,
+        db_pool: db_pool,
         reqwest_client: reqwest::Client::new(),
         routes: routes.clone(),
     };

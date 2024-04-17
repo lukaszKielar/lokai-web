@@ -2,6 +2,7 @@
 use crate::api::ollama::{default_model, OllamaChatParams, OllamaChatResponse, OllamaMessage};
 use crate::models::{Conversation, Message};
 use leptos::server;
+use leptos::use_context;
 use leptos::ServerFnError;
 use uuid::Uuid;
 
@@ -175,8 +176,8 @@ pub async fn chat(
     conversation_id: Uuid,
     user_message: Message,
 ) -> Result<Message, ServerFnError> {
-    use db::save_message;
-    use leptos::{logging, use_context};
+    use db::{get_conversation_messages, save_message};
+    use leptos::logging;
     use reqwest;
     use sqlx::SqlitePool;
 
@@ -229,7 +230,6 @@ pub async fn chat(
 #[server(GetConversation, "/api", "GetJson", "conversations")]
 pub async fn get_conversation(conversation_id: Uuid) -> Result<Conversation, ServerFnError> {
     use db::get_conversation;
-    use leptos::{logging, use_context};
     use sqlx::SqlitePool;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
@@ -242,7 +242,6 @@ pub async fn get_conversation(conversation_id: Uuid) -> Result<Conversation, Ser
 #[server(CreateConversation, "/api", "Url", "conversations")]
 pub async fn create_conversation() -> Result<Conversation, ServerFnError> {
     use db::save_conversation;
-    use leptos::{logging, use_context};
     use sqlx::SqlitePool;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");

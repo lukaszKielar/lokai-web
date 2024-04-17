@@ -1,13 +1,10 @@
-use std::str::FromStr;
-
 use crate::api::{chat, create_conversation};
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
-use crate::models::{Conversation, Message};
+use crate::models::Message;
 
 use leptos::*;
 use leptos_meta::*;
-use uuid::Uuid;
 
 #[component]
 pub fn App() -> impl IntoView {

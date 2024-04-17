@@ -1,8 +1,5 @@
 #[cfg(feature = "ssr")]
-use crate::api::{
-    db::{get_conversation, save_message},
-    ollama::{default_model, OllamaChatParams, OllamaChatResponse, OllamaMessage},
-};
+use crate::api::ollama::{default_model, OllamaChatParams, OllamaChatResponse, OllamaMessage};
 use crate::models::{Conversation, Message};
 use leptos::server;
 use leptos::ServerFnError;
@@ -11,45 +8,92 @@ use uuid::Uuid;
 // TODO: move to separate module backend/db
 #[cfg(feature = "ssr")]
 mod db {
+    use leptos::logging;
     use sqlx::SqlitePool;
     use uuid::Uuid;
 
     use crate::models::{Conversation, Message};
 
-    // TODO: save conversation if not exist
+    pub async fn save_conversation(
+        pool: SqlitePool,
+        conversation: Conversation,
+    ) -> Result<Conversation, String> {
+        let _id = sqlx::query!(
+            r#"
+    INSERT INTO conversations ( id, name )
+    VALUES ( ?1, ?2 )
+            "#,
+            conversation.id,
+            "TODO"
+        )
+        .execute(&pool)
+        .await
+        .unwrap()
+        .last_insert_rowid();
+
+        Ok(conversation)
+    }
 
     pub async fn get_conversation(
         pool: SqlitePool,
         conversation_id: Uuid,
     ) -> Result<Conversation, String> {
-        let items: Vec<(Uuid, String, String)> = sqlx::query_as(
+        logging::log!("fetching record: {:?}", conversation_id);
+        let _conversation_raw = sqlx::query(
             r#"
-    SELECT id, role, content FROM messages
+    SELECT id, name
+    FROM conversations
+    WHERE id = ?
+        "#,
+        )
+        .bind(conversation_id)
+        .fetch_one(&pool)
+        .await
+        // TODO: handle result
+        .unwrap();
+
+        let messages = get_conversation_messages(pool, conversation_id)
+            .await
+            .unwrap();
+
+        Ok(Conversation {
+            id: conversation_id,
+            messages: messages,
+        })
+    }
+
+    pub async fn get_conversation_messages(
+        pool: SqlitePool,
+        conversation_id: Uuid,
+    ) -> Result<Vec<Message>, String> {
+        let rows: Vec<(Uuid, String, String)> = sqlx::query_as(
+            r#"
+    SELECT id, role, content
+    FROM messages
     WHERE conversation_id = ?
             "#,
         )
         .bind(conversation_id)
         .fetch_all(&pool)
         .await
+        // TODO: handle errors
         .unwrap();
 
-        let conversation = Conversation {
-            id: conversation_id,
-            messages: items
-                .iter()
-                .map(|(id, role, content)| Message {
-                    id: *id,
-                    role: role.to_string(),
-                    content: content.to_string(),
-                    conversation_id: conversation_id,
-                })
-                .collect(),
-        };
+        let messages = rows
+            .into_iter()
+            .map(|(id, role, content)| Message {
+                id,
+                role,
+                content,
+                conversation_id,
+            })
+            .collect();
 
-        Ok(conversation)
+        Ok(messages)
     }
 
     // TODO: user proper error handling
+    // TODO: rename to create_message
     pub async fn save_message(
         pool: SqlitePool,
         message: Message,
@@ -95,11 +139,11 @@ mod ollama {
         pub content: String,
     }
 
-    impl From<&Message> for OllamaMessage {
-        fn from(value: &Message) -> Self {
+    impl From<Message> for OllamaMessage {
+        fn from(value: Message) -> Self {
             Self {
                 role: Role::from(value.role.as_ref()),
-                content: value.content.clone(),
+                content: value.content,
             }
         }
     }
@@ -125,12 +169,13 @@ mod ollama {
 
 // TODO: save every prompt, response and context to database, async thread
 // TODO: this function should take id of the conversation, prompt and context (history of conversation)
-#[server(Chat, "/api/chat")]
+#[server(Chat, "/api", "Url", "chat")]
 pub async fn chat(
     // TODO: I need to reduce amount of data send over the wire (maybe conversation_id and fetch it from the DB on a server?)
     conversation_id: Uuid,
     user_message: Message,
 ) -> Result<Message, ServerFnError> {
+    use db::save_message;
     use leptos::{logging, use_context};
     use reqwest;
     use sqlx::SqlitePool;
@@ -139,21 +184,23 @@ pub async fn chat(
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let db_pool_clone = db_pool.clone();
+    // TODO: that should be different call to server
     let _ = save_message(db_pool_clone, user_message, conversation_id).await;
 
     let db_pool_clone = db_pool.clone();
-    let conversation = get_conversation(db_pool_clone, conversation_id)
+    let messages = get_conversation_messages(db_pool_clone, conversation_id)
         .await
-        .unwrap();
+        // TODO: handle result
+        .unwrap()
+        .into_iter()
+        .map(|m| OllamaMessage::from(m))
+        .collect();
 
     // TODO: handle lack of context
     let client = use_context::<reqwest::Client>().expect("reqwest.Client not found");
     let params = OllamaChatParams {
         model: default_model(),
-        messages: conversation
-            .iter()
-            .map(|m| OllamaMessage::from(m))
-            .collect(),
+        messages: messages,
         stream: false,
     };
     logging::log!("request params: {:?}", params);
@@ -173,7 +220,37 @@ pub async fn chat(
     let assistant_message = Message::assistant(response.message.content, conversation_id);
 
     let assistant_message_clone = assistant_message.clone();
+    // TODO: I should spawn new thread and return, and then come back and check the result
     let _ = save_message(db_pool, assistant_message_clone, conversation_id).await;
 
     Ok(assistant_message)
+}
+
+#[server(GetConversation, "/api", "GetJson", "conversations")]
+pub async fn get_conversation(conversation_id: Uuid) -> Result<Conversation, ServerFnError> {
+    use db::get_conversation;
+    use leptos::{logging, use_context};
+    use sqlx::SqlitePool;
+
+    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
+
+    let conversation = get_conversation(db_pool, conversation_id).await.unwrap();
+
+    Ok(conversation)
+}
+
+#[server(CreateConversation, "/api", "Url", "conversations")]
+pub async fn create_conversation() -> Result<Conversation, ServerFnError> {
+    use db::save_conversation;
+    use leptos::{logging, use_context};
+    use sqlx::SqlitePool;
+
+    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
+
+    let conversation = Conversation::new(Uuid::new_v4());
+    save_conversation(db_pool, conversation.clone())
+        .await
+        .unwrap();
+
+    Ok(conversation)
 }

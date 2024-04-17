@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::api::chat;
+use crate::api::{chat, create_conversation};
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
 use crate::models::{Conversation, Message};
@@ -15,10 +15,15 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
     logging::log!("loading");
 
-    let conversation_id = Uuid::from_str("8cd22e2e-1e82-4130-a000-c47adfedd1d5").unwrap();
-
     // TODO: read conversation from DB
-    let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
+    // TODO: list of conversations should be loaded from the server in reaction to changes
+    // TODO: separately read conversation and messages
+    let conversation_db = create_resource(
+        || (),
+        |_| async move { create_conversation().await.unwrap() },
+    );
+    let conversation_id = conversation_db.get().unwrap().id;
+    let (conversation, set_conversation) = create_signal(conversation_db.get().unwrap());
 
     // TODO: throw an error when prompt is empty
     let send_prompt = create_action(move |prompt: &String| {

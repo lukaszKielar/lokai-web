@@ -41,6 +41,7 @@ pub struct Message {
     pub id: Uuid,
     pub role: String,
     pub content: String,
+    // TODO: this should be only for ssr
     pub conversation_id: Uuid,
 }
 
@@ -69,10 +70,12 @@ impl Message {
 #[cfg_attr(feature = "ssr", derive(FromRow))]
 pub struct Conversation {
     pub id: Uuid,
+    // TODO: remove messages, they should be loaded separately by different endpoint
     pub messages: Vec<Message>,
 }
 
 impl Conversation {
+    // TODO: remove id argument, it can be automatically generated
     pub fn new(id: Uuid) -> Self {
         Self {
             id: id,

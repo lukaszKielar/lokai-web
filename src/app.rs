@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
 use crate::models::{Conversation, Message};
-use crate::server::api::chat;
+use crate::server::api::{chat, get_conversation_messages, CreateMessage};
 
 use leptos::*;
 use leptos_meta::*;
@@ -18,6 +18,14 @@ pub fn App() -> impl IntoView {
     // TODO: list of conversations should be loaded from the server in reaction to changes
     // TODO: separately read conversation and messages
     let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
+    // let create_message = create_server_action::<create_message>();
+    let messages = create_resource(
+        || (),
+        |_| {
+            let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
+            get_conversation_messages(conversation_id)
+        },
+    );
     let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
 
     // TODO: throw an error when prompt is empty
@@ -25,15 +33,15 @@ pub fn App() -> impl IntoView {
         let conversation_id = conversation().id;
         logging::log!("preparing to send a message");
         let user_message = Message::user(prompt.to_owned(), conversation_id);
-        let user_message_content = user_message.clone().content;
-        set_conversation.update(move |c| c.push_user_message(user_message_content));
-        chat(conversation_id, user_message)
+        let user_message_clone = user_message.clone();
+        set_conversation.update(move |c| c.push_message(user_message_clone));
+        chat(user_message)
     });
 
     // TODO: disable submit button when we're waiting for server's response
     create_effect(move |_| {
         if let Some(Ok(assistant_response)) = send_prompt.value().get() {
-            set_conversation.update(move |c| c.push_assistant_message(assistant_response.content));
+            set_conversation.update(move |c| c.push_message(assistant_response));
         }
     });
 

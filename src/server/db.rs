@@ -35,7 +35,6 @@ WHERE conversation_id = ?
 }
 
 // TODO: user proper error handling
-// TODO: rename to create_message
 pub async fn create_message(db_pool: SqlitePool, message: Message) -> Result<i64, String> {
     logging::log!("saving message to db: {:?}", message);
 

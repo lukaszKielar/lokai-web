@@ -1,10 +1,9 @@
 use std::str::FromStr;
 
-use crate::components::conversation_area::ConversationArea;
-use crate::components::prompt_area::PromptArea;
-use crate::models::{Conversation, Message};
+use crate::models::{Conversation, Message, Role};
 use crate::server::api::{chat, get_conversation_messages, CreateMessage};
 
+use leptos::ev::SubmitEvent;
 use leptos::*;
 use leptos_meta::*;
 use uuid::Uuid;
@@ -45,6 +44,17 @@ pub fn App() -> impl IntoView {
         }
     });
 
+    let (prompt, set_prompt) = create_signal(String::new());
+
+    let on_submit = move |ev: SubmitEvent| {
+        ev.prevent_default();
+        let value = prompt();
+        if value != "" {
+            send_prompt.dispatch(value);
+            set_prompt("".to_string());
+        }
+    };
+
     view! {
         <main>
             <Stylesheet id="leptos" href="/pkg/lokai.css"/>
@@ -57,10 +67,50 @@ pub fn App() -> impl IntoView {
 
             <div class="flex flex-col h-screen bg-gray-50 place-items-center">
                 <div class="flex-1 w-[720px] bg-gray-100">
-                    <ConversationArea conversation/>
+                    <div class="flex flex-col space-y-2 p-2">
+                        {move || {
+                            conversation()
+                                .iter()
+                                .map(move |msg| {
+                                    let message_class = match Role::from(msg.role.as_ref()) {
+                                        Role::User => "self-end bg-blue-500 text-white",
+                                        Role::Assistant => "self-start bg-green-500 text-white",
+                                        _ => panic!("system message not supported yet"),
+                                    };
+                                    view! {
+                                        // TODO: define sytstem message class
+                                        // TODO: define trait for Tailwind, and implement it for Message struct
+                                        <div class=format!(
+                                            "max-w-md p-4 mb-5 rounded-lg {message_class}",
+                                        )>{msg.content.clone()}</div>
+                                    }
+                                })
+                                .collect_view()
+                        }}
+
+                    </div>
                 </div>
                 <div class="flex-none h-20 w-[720px] bottom-0 place-items-center justify-center items-center bg-gray-200">
-                    <PromptArea send_prompt/>
+                    <form on:submit=on_submit>
+                        <div class="flex items-center p-2">
+                            <input
+                                on:input=move |ev| {
+                                    set_prompt(event_target_value(&ev));
+                                }
+
+                                class="border border-gray-300 rounded-lg px-4 py-2 w-full"
+                                type="text"
+                                placeholder="Message assistant..."
+                                prop:value=prompt
+                            />
+                            <button
+                                class="ml-2 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                                type="submit"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>

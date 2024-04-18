@@ -1,29 +1,28 @@
-use crate::api::{chat, create_conversation};
+use std::str::FromStr;
+
 use crate::components::conversation_area::ConversationArea;
 use crate::components::prompt_area::PromptArea;
-use crate::models::Message;
+use crate::models::{Conversation, Message};
+use crate::server::api::chat;
 
 use leptos::*;
 use leptos_meta::*;
+use uuid::Uuid;
 
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
-    logging::log!("loading");
 
     // TODO: read conversation from DB
     // TODO: list of conversations should be loaded from the server in reaction to changes
     // TODO: separately read conversation and messages
-    let conversation_db = create_resource(
-        || (),
-        |_| async move { create_conversation().await.unwrap() },
-    );
-    let conversation_id = conversation_db.get().unwrap().id;
-    let (conversation, set_conversation) = create_signal(conversation_db.get().unwrap());
+    let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
+    let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
 
     // TODO: throw an error when prompt is empty
     let send_prompt = create_action(move |prompt: &String| {
+        let conversation_id = conversation().id;
         logging::log!("preparing to send a message");
         let user_message = Message::user(prompt.to_owned(), conversation_id);
         let user_message_content = user_message.clone().content;

@@ -1,4 +1,3 @@
-pub mod api;
 pub mod app;
 pub mod components;
 pub mod error_template;
@@ -7,6 +6,7 @@ pub mod fileserv;
 #[cfg(feature = "ssr")]
 pub mod handlers;
 pub mod models;
+pub mod server;
 #[cfg(feature = "ssr")]
 pub mod state;
 

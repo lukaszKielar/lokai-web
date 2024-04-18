@@ -2,6 +2,7 @@
 #[tokio::main]
 async fn main() {
     use std::env;
+    use std::str::FromStr;
 
     use axum::routing::get;
     use axum::Router;
@@ -13,12 +14,32 @@ async fn main() {
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
     use sqlx::SqlitePool;
+    use uuid::Uuid;
 
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
     let db_pool: SqlitePool = SqlitePoolOptions::new()
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
+
+    // FIXME: hack for now, because I want to understand how resources work in leptos
+    let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
+    {
+        let db_pool = db_pool.clone();
+        let _ = sqlx::query(
+            r#"
+        DELETE FROM messages;
+        DELETE FROM conversations;
+        INSERT INTO conversations ( id, name )
+        VALUES ( ?1, ?2 );
+            "#,
+        )
+        .bind(conversation_id)
+        .bind("conversation")
+        .execute(&db_pool)
+        .await
+        .unwrap();
+    }
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:

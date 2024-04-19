@@ -17,14 +17,38 @@ pub fn App() -> impl IntoView {
     // TODO: list of conversations should be loaded from the server in reaction to changes
     // TODO: separately read conversation and messages
     let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
-    // let create_message = create_server_action::<create_message>();
+
+    let create_message = create_server_action::<CreateMessage>();
     let messages = create_resource(
         || (),
-        |_| {
-            let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
-            get_conversation_messages(conversation_id)
+        |_| async {
+            get_conversation_messages(
+                Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap(),
+            )
+            .await
+            .unwrap()
         },
     );
+
+    let messages_view = move || {
+        messages.get().map(|messages| {
+            messages
+                .iter()
+                .map(|message| {
+                    let message_class = match Role::from(message.role.as_ref()) {
+                        Role::User => "self-end bg-blue-500 text-white",
+                        Role::Assistant => "self-start bg-green-500 text-white",
+                        _ => panic!("system message not supported yet"),
+                    };
+                    view! {
+                        <div class=format!(
+                            "max-w-md p-4 mb-5 rounded-lg {message_class}",
+                        )>{message.content.clone()}</div>
+                    }
+                })
+                .collect_view()
+        })
+    };
     let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
 
     // TODO: throw an error when prompt is empty
@@ -59,7 +83,6 @@ pub fn App() -> impl IntoView {
         <main>
             <Stylesheet id="leptos" href="/pkg/lokai.css"/>
 
-            // sets the document title
             <Title text="Welcome to LokAI!"/>
 
             <Meta charset="UTF-8"/>
@@ -67,28 +90,33 @@ pub fn App() -> impl IntoView {
 
             <div class="flex flex-col h-screen bg-gray-50 place-items-center">
                 <div class="flex-1 w-[720px] bg-gray-100">
-                    <div class="flex flex-col space-y-2 p-2">
-                        {move || {
-                            conversation()
-                                .iter()
-                                .map(move |msg| {
-                                    let message_class = match Role::from(msg.role.as_ref()) {
-                                        Role::User => "self-end bg-blue-500 text-white",
-                                        Role::Assistant => "self-start bg-green-500 text-white",
-                                        _ => panic!("system message not supported yet"),
-                                    };
-                                    view! {
-                                        // TODO: define sytstem message class
-                                        // TODO: define trait for Tailwind, and implement it for Message struct
-                                        <div class=format!(
-                                            "max-w-md p-4 mb-5 rounded-lg {message_class}",
-                                        )>{msg.content.clone()}</div>
-                                    }
-                                })
-                                .collect_view()
-                        }}
+                    <Transition fallback=move || view! { <p>"Loading initial data..."</p> }>
+                        <div class="flex flex-col space-y-2 p-2">
+                            {messages_view}
+                            {{
+                                move || {
+                                    conversation()
+                                        .iter()
+                                        .map(move |msg| {
+                                            let message_class = match Role::from(msg.role.as_ref()) {
+                                                Role::User => "self-end bg-blue-500 text-white",
+                                                Role::Assistant => "self-start bg-green-500 text-white",
+                                                _ => panic!("system message not supported yet"),
+                                            };
+                                            view! {
+                                                // TODO: define sytstem message class
+                                                // TODO: define trait for Tailwind, and implement it for Message struct
+                                                <div class=format!(
+                                                    "max-w-md p-4 mb-5 rounded-lg {message_class}",
+                                                )>{msg.content.clone()}</div>
+                                            }
+                                        })
+                                        .collect_view()
+                                }
+                            }}
 
-                    </div>
+                        </div>
+                    </Transition>
                 </div>
                 <div class="flex-none h-20 w-[720px] bottom-0 place-items-center justify-center items-center bg-gray-200">
                     <form on:submit=on_submit>

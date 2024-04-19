@@ -4,8 +4,8 @@ use uuid::Uuid;
 
 // TODO: save every prompt, response and context to database, async thread
 // TODO: this function should take id of the conversation, prompt and context (history of conversation)
-#[server(Chat, "/api")]
-pub async fn chat(user_message: Message) -> Result<Message, ServerFnError> {
+#[server(AskAssistant, "/api")]
+pub async fn ask_assistant(user_message: Message) -> Result<Message, ServerFnError> {
     use super::{db, ollama::*};
     use leptos::use_context;
     use sqlx::SqlitePool;
@@ -13,7 +13,6 @@ pub async fn chat(user_message: Message) -> Result<Message, ServerFnError> {
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let conversation_id = user_message.conversation_id;
 
-    // TODO: that should be different call to server
     {
         let db_pool = db_pool.clone();
         let _ = db::create_message(db_pool, user_message).await;
@@ -59,21 +58,6 @@ pub async fn chat(user_message: Message) -> Result<Message, ServerFnError> {
     Ok(assistant_message)
 }
 
-#[server(CreateMessage, "/api")]
-pub async fn create_message(user_message: Message) -> Result<Message, ServerFnError> {
-    use super::db;
-    use leptos::logging;
-    use leptos::use_context;
-    use sqlx::SqlitePool;
-
-    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
-    let _ = db::create_message(db_pool, user_message.clone())
-        .await
-        .unwrap();
-
-    Ok(user_message)
-}
-
 #[server(GetConversationMessages, "/api")]
 pub async fn get_conversation_messages(
     conversation_id: Uuid,
@@ -81,9 +65,6 @@ pub async fn get_conversation_messages(
     use super::db;
     use leptos::use_context;
     use sqlx::SqlitePool;
-
-    // FIXME: remove me
-    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
 

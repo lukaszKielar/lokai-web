@@ -36,7 +36,7 @@ WHERE conversation_id = ?
 
 // TODO: user proper error handling
 pub async fn create_message(db_pool: SqlitePool, message: Message) -> Result<i64, String> {
-    logging::log!("saving message to db: {:?}", message);
+    logging::log!("saving message to db: {:?}", message.id);
 
     let id = sqlx::query!(
         r#"

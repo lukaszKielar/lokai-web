@@ -13,36 +13,47 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    // TODO: read conversation from DB
     // TODO: list of conversations should be loaded from the server in reaction to changes
     // TODO: separately read conversation and messages
     let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
-
-    let send_user_prompt = create_server_action::<AskAssistant>();
-    let assistant_response = send_user_prompt.value();
-    let messages = create_resource(assistant_response, |_| async {
-        get_conversation_messages(Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap())
+    let db_messages = create_resource(
+        || (),
+        |_| async {
+            get_conversation_messages(
+                Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap(),
+            )
             .await
             .unwrap()
+        },
+    );
+    let (messages, set_messages) = create_signal(Vec::<Message>::new());
+
+    let send_user_prompt = create_server_action::<AskAssistant>();
+    let assistant_response_value = send_user_prompt.value();
+
+    create_effect(move |_| {
+        if let Some(response) = assistant_response_value.get() {
+            let assistant_response = response.unwrap();
+            set_messages.update(|msgs| msgs.push(assistant_response));
+        }
     });
+
     let messages_view = move || {
-        messages.get().map(|messages| {
-            messages
-                .iter()
-                .map(|message| {
-                    let message_class = match Role::from(message.role.as_ref()) {
-                        Role::User => "self-end bg-blue-500 text-white",
-                        Role::Assistant => "self-start bg-green-500 text-white",
-                        _ => panic!("system message not supported yet"),
-                    };
-                    view! {
-                        <div class=format!(
-                            "max-w-md p-4 mb-5 rounded-lg {message_class}",
-                        )>{message.content.clone()}</div>
-                    }
-                })
-                .collect_view()
-        })
+        messages()
+            .iter()
+            .map(|message| {
+                let message_class = match Role::from(message.role.as_ref()) {
+                    Role::User => "self-end bg-blue-500 text-white",
+                    Role::Assistant => "self-start bg-green-500 text-white",
+                    _ => panic!("system message not supported yet"),
+                };
+                view! {
+                    <div class=format!(
+                        "max-w-md p-4 mb-5 rounded-lg {message_class}",
+                    )>{message.content.clone()}</div>
+                }
+            })
+            .collect_view()
     };
 
     let (user_prompt, set_user_prompt) = create_signal(String::new());
@@ -59,14 +70,25 @@ pub fn App() -> impl IntoView {
             <div class="flex flex-col h-screen bg-gray-50 place-items-center">
                 <div class="flex-1 w-[720px] bg-gray-100">
                     <Transition fallback=move || view! { <p>"Loading initial data..."</p> }>
-                        <div class="flex flex-col space-y-2 p-2">{messages_view}</div>
+                        <div class="flex flex-col space-y-2 p-2">
+
+                            {
+                                if let Some(messages) = db_messages.get() {
+                                    set_messages(messages)
+                                }
+                                messages_view
+                            }
+
+                        </div>
                     </Transition>
                 </div>
                 <div class="flex-none h-20 w-[720px] bottom-0 place-items-center justify-center items-center bg-gray-200">
                     <form on:submit=move |ev: SubmitEvent| {
                         ev.prevent_default();
                         let user_message = Message::user(user_prompt(), conversation_id);
+                        let user_message_clone = user_message.clone();
                         if user_message.content != "" {
+                            set_messages.update(|msgs| msgs.push(user_message_clone));
                             send_user_prompt.dispatch(AskAssistant { user_message });
                             set_user_prompt("".to_string());
                         }

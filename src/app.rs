@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use crate::models::{Conversation, Message, Role};
-use crate::server::api::{chat, get_conversation_messages, CreateMessage};
+use crate::models::{Message, Role};
+use crate::server::api::{get_conversation_messages, AskAssistant};
 
 use leptos::ev::SubmitEvent;
 use leptos::*;
@@ -18,18 +18,13 @@ pub fn App() -> impl IntoView {
     // TODO: separately read conversation and messages
     let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
 
-    let create_message = create_server_action::<CreateMessage>();
-    let messages = create_resource(
-        || (),
-        |_| async {
-            get_conversation_messages(
-                Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap(),
-            )
+    let send_user_prompt = create_server_action::<AskAssistant>();
+    let assistant_response = send_user_prompt.value();
+    let messages = create_resource(assistant_response, |_| async {
+        get_conversation_messages(Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap())
             .await
             .unwrap()
-        },
-    );
-
+    });
     let messages_view = move || {
         messages.get().map(|messages| {
             messages
@@ -49,35 +44,8 @@ pub fn App() -> impl IntoView {
                 .collect_view()
         })
     };
-    let (conversation, set_conversation) = create_signal(Conversation::new(conversation_id));
 
-    // TODO: throw an error when prompt is empty
-    let send_prompt = create_action(move |prompt: &String| {
-        let conversation_id = conversation().id;
-        logging::log!("preparing to send a message");
-        let user_message = Message::user(prompt.to_owned(), conversation_id);
-        let user_message_clone = user_message.clone();
-        set_conversation.update(move |c| c.push_message(user_message_clone));
-        chat(user_message)
-    });
-
-    // TODO: disable submit button when we're waiting for server's response
-    create_effect(move |_| {
-        if let Some(Ok(assistant_response)) = send_prompt.value().get() {
-            set_conversation.update(move |c| c.push_message(assistant_response));
-        }
-    });
-
-    let (prompt, set_prompt) = create_signal(String::new());
-
-    let on_submit = move |ev: SubmitEvent| {
-        ev.prevent_default();
-        let value = prompt();
-        if value != "" {
-            send_prompt.dispatch(value);
-            set_prompt("".to_string());
-        }
-    };
+    let (user_prompt, set_user_prompt) = create_signal(String::new());
 
     view! {
         <main>
@@ -91,45 +59,29 @@ pub fn App() -> impl IntoView {
             <div class="flex flex-col h-screen bg-gray-50 place-items-center">
                 <div class="flex-1 w-[720px] bg-gray-100">
                     <Transition fallback=move || view! { <p>"Loading initial data..."</p> }>
-                        <div class="flex flex-col space-y-2 p-2">
-                            {messages_view}
-                            {{
-                                move || {
-                                    conversation()
-                                        .iter()
-                                        .map(move |msg| {
-                                            let message_class = match Role::from(msg.role.as_ref()) {
-                                                Role::User => "self-end bg-blue-500 text-white",
-                                                Role::Assistant => "self-start bg-green-500 text-white",
-                                                _ => panic!("system message not supported yet"),
-                                            };
-                                            view! {
-                                                // TODO: define sytstem message class
-                                                // TODO: define trait for Tailwind, and implement it for Message struct
-                                                <div class=format!(
-                                                    "max-w-md p-4 mb-5 rounded-lg {message_class}",
-                                                )>{msg.content.clone()}</div>
-                                            }
-                                        })
-                                        .collect_view()
-                                }
-                            }}
-
-                        </div>
+                        <div class="flex flex-col space-y-2 p-2">{messages_view}</div>
                     </Transition>
                 </div>
                 <div class="flex-none h-20 w-[720px] bottom-0 place-items-center justify-center items-center bg-gray-200">
-                    <form on:submit=on_submit>
+                    <form on:submit=move |ev: SubmitEvent| {
+                        ev.prevent_default();
+                        let user_message = Message::user(user_prompt(), conversation_id);
+                        if user_message.content != "" {
+                            send_user_prompt.dispatch(AskAssistant { user_message });
+                            set_user_prompt("".to_string());
+                        }
+                    }>
+
                         <div class="flex items-center p-2">
                             <input
                                 on:input=move |ev| {
-                                    set_prompt(event_target_value(&ev));
+                                    set_user_prompt(event_target_value(&ev));
                                 }
 
                                 class="border border-gray-300 rounded-lg px-4 py-2 w-full"
                                 type="text"
                                 placeholder="Message assistant..."
-                                prop:value=prompt
+                                prop:value=user_prompt
                             />
                             <button
                                 class="ml-2 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"

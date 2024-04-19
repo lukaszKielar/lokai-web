@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
     #[serde(rename = "system")]
     System,
@@ -35,7 +35,7 @@ impl std::fmt::Display for Role {
 }
 
 // TODO: message should be reactive, saying, whenever it changes, I should update UI
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "ssr", derive(FromRow))]
 pub struct Message {
     pub id: Uuid,

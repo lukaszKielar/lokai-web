@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::str::FromStr;
 
 use crate::models::{Message, Role};
@@ -46,7 +45,7 @@ fn Sidebar() -> impl IntoView {
 
 #[component]
 fn MessageComponent(message: ReadSignal<Message>) -> impl IntoView {
-    let is_user = move || match Role::from(message().role) {
+    let is_user = move || match Role::from(message.get_untracked().role) {
         Role::Assistant | Role::System => false,
         Role::User => true,
     };
@@ -68,7 +67,7 @@ fn MessageComponent(message: ReadSignal<Message>) -> impl IntoView {
     };
 
     let message_content_class = move || {
-        let message_content = message().content;
+        let message_content = message.get_untracked().content;
         if !is_user() && message_content == "" {
             view! { <Icon icon=icondata::LuTextCursorInput class="h-6 w-6 animate-pulse"/> }
                 .into_view()
@@ -108,7 +107,8 @@ fn MessageComponent(message: ReadSignal<Message>) -> impl IntoView {
 
 #[component]
 fn Conversation() -> impl IntoView {
-    let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
+    let (conversation_id, _) =
+        create_signal(Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap());
 
     let (model, set_model) = create_signal(String::from("mistral:7b"));
 
@@ -124,6 +124,7 @@ fn Conversation() -> impl IntoView {
     );
 
     let (messages, set_messages) = create_signal(Vec::<Message>::new());
+    let (user_prompt, set_user_prompt) = create_signal(String::new());
 
     // set_messages.update(move |messages| {
     //     let user_msg = Message::user("Why is the sky blue?".to_string(), conversation_id);
@@ -131,6 +132,16 @@ fn Conversation() -> impl IntoView {
     //     messages.push(user_msg);
     //     messages.push(assistant_msg);
     // });
+
+    let send_user_prompt = create_server_action::<AskAssistant>();
+    let assistant_response_value = send_user_prompt.value();
+
+    create_effect(move |_| {
+        if let Some(response) = assistant_response_value.get() {
+            let assistant_response = response.unwrap();
+            set_messages.update(|msgs| msgs.push(assistant_response));
+        }
+    });
 
     view! {
         <div class="flex max-w-full flex-1 flex-col">
@@ -152,15 +163,15 @@ fn Conversation() -> impl IntoView {
                                     <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
                                         "Model: " <b>{model}</b>
                                     </div>
-                                    {messages()
-                                        .iter()
-                                        .map(|m| {
-                                            let m = m.clone();
-                                            let (message, _) = create_signal(m);
-                                            view! { <MessageComponent message/> }
-                                        })
-                                        .collect_view()}
-                                    <div class="w-full h-32 md:h-48 flex-shrink-0"></div>
+                                    {move || {
+                                        messages()
+                                            .iter()
+                                            .map(|m| {
+                                                let (message, _) = create_signal(m.clone());
+                                                view! { <MessageComponent message/> }
+                                            })
+                                            .collect_view()
+                                    }} <div class="w-full h-32 md:h-48 flex-shrink-0"></div>
                                 // <div ref=bottomOfChatRef></div>
                                 </Transition>
                             </div>
@@ -180,24 +191,45 @@ fn Conversation() -> impl IntoView {
                             // ) : null}
                             <div class="flex flex-col w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-gray-700 rounded-md shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
                                 <textarea
-                                    // ref={textAreaRef}
-                                    // value={message}
-                                    // tabIndex={0}
-                                    // data-id="root"
-                                    // style={{
-                                    // height: "24px",
-                                    // maxHeight: "200px",
-                                    // overflowY: "hidden",
-                                    // }}
+                                    on:input=move |ev| {
+                                        set_user_prompt(event_target_value(&ev));
+                                    }
+
+                                    type="text"
+                                    placeholder="Message assistant..."
+                                    prop:value=user_prompt
+                                    // ref={textAreaRef} <- important for auto scrolling
+                                    // tabIndex={0} <- no idea
+                                    // data-id="root" <- no idea
+                                    // style={{ <- no idea
+                                    // height: "24px", <- no idea
+                                    // maxHeight: "200px", <- no idea
+                                    // overflowY: "hidden", <- no idea
+                                    // }} <- no idea
                                     rows=1
                                     placeholder="Send a message..."
-                                    class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0"
-                                >// onChange={(e) => setMessage(e.target.value)}
-                                // onKeyDown={handleKeypress}
+                                    class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0 h-[24px] max-h-[200px] overflow-y-hidden"
+                                >// onKeyDown={handleKeypress}
                                 </textarea>
                                 // disabled={isLoading || message?.length === 0}
                                 // onClick={sendMessage}
-                                <button class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40">
+                                <button
+                                    class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
+                                    on:click=move |ev| {
+                                        ev.prevent_default();
+                                        let user_message = Message::user(
+                                            user_prompt(),
+                                            conversation_id(),
+                                        );
+                                        let user_message_clone = user_message.clone();
+                                        if user_message.content != "" {
+                                            set_messages.update(|msgs| msgs.push(user_message_clone));
+                                            send_user_prompt.dispatch(AskAssistant { user_message });
+                                            set_user_prompt("".to_string());
+                                        }
+                                    }
+                                >
+
                                     <Icon icon=icondata::LuSend class="h-4 w-4 mr-1 text-white "/>
                                 </button>
                             </div>

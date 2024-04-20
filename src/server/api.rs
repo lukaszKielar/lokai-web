@@ -66,6 +66,9 @@ pub async fn get_conversation_messages(
     use leptos::use_context;
     use sqlx::SqlitePool;
 
+    // TODO: remove me
+    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
 
     let messages = db::get_conversation_messages(db_pool, conversation_id)

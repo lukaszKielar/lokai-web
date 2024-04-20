@@ -126,15 +126,18 @@ fn Conversation() -> impl IntoView {
     let (messages, set_messages) = create_signal(Vec::<Message>::new());
     let (user_prompt, set_user_prompt) = create_signal(String::new());
 
-    // set_messages.update(move |messages| {
-    //     let user_msg = Message::user("Why is the sky blue?".to_string(), conversation_id);
-    //     let assistant_msg = Message::assistant("I don't know".to_string(), conversation_id);
-    //     messages.push(user_msg);
-    //     messages.push(assistant_msg);
-    // });
-
     let send_user_prompt = create_server_action::<AskAssistant>();
     let assistant_response_value = send_user_prompt.value();
+
+    let (button_disabled, set_button_disabled) = create_signal(true);
+
+    create_effect(move |_| {
+        if user_prompt().len() == 0 || send_user_prompt.pending().get() {
+            set_button_disabled(true)
+        } else {
+            set_button_disabled(false)
+        };
+    });
 
     create_effect(move |_| {
         if let Some(response) = assistant_response_value.get() {
@@ -228,6 +231,8 @@ fn Conversation() -> impl IntoView {
                                             set_user_prompt("".to_string());
                                         }
                                     }
+
+                                    disabled=button_disabled
                                 >
 
                                     <Icon icon=icondata::LuSend class="h-4 w-4 mr-1 text-white "/>

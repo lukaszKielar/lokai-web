@@ -33,6 +33,8 @@ sqlx = { version = "0.7.4", default-features = false, features = [
     "macros",
 ], optional = true }
 uuid = { version = "1.8", features = ["v4", "serde"] }
+leptos_icons = "0.3"
+icondata = "0.3"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]

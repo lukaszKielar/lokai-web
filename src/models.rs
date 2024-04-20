@@ -15,7 +15,20 @@ pub enum Role {
 
 impl From<&str> for Role {
     fn from(value: &str) -> Self {
-        match value {
+        let value = value.to_lowercase();
+        match value.as_ref() {
+            "system" => Role::System,
+            "user" => Role::User,
+            "assistant" => Role::Assistant,
+            _ => panic!("Unknown Role!"),
+        }
+    }
+}
+
+impl From<String> for Role {
+    fn from(value: String) -> Self {
+        let value = value.to_lowercase();
+        match value.as_ref() {
             "system" => Role::System,
             "user" => Role::User,
             "assistant" => Role::Assistant,

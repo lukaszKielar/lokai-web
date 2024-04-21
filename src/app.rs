@@ -3,9 +3,7 @@ use std::str::FromStr;
 use crate::models::{Message, Role};
 use crate::server::api::{get_conversation_messages, AskAssistant};
 
-use icondata::Icon;
-use leptos::ev::SubmitEvent;
-use leptos::html::Div;
+use leptos::html::{Div, Textarea};
 use leptos::*;
 use leptos_icons::Icon;
 use leptos_meta::*;
@@ -152,9 +150,12 @@ fn Conversation() -> impl IntoView {
         let _ = messages();
         if let Some(div) = bottom_of_chat_div.get() {
             // TODO: I need to scroll with options
+            // https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
             div.scroll_into_view();
         }
     });
+
+    let user_prompt_textarea = create_node_ref::<Textarea>();
 
     view! {
         <div class="flex max-w-full flex-1 flex-col">
@@ -185,7 +186,7 @@ fn Conversation() -> impl IntoView {
                                             })
                                             .collect_view()
                                     }}
-                                    <div class="w-full h-32 md:h-48 flex-shrink-0"></div>
+                                    <div class="w-full h-32 flex-shrink-0"></div>
                                     <div node_ref=bottom_of_chat_div></div>
                                 </Transition>
                             </div>
@@ -195,6 +196,7 @@ fn Conversation() -> impl IntoView {
                 </div>
                 <div class="absolute bottom-0 left-0 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2">
                     <form class="stretch mx-2 flex flex-row gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
+
                         <div class="relative flex flex-col h-full flex-1 items-stretch md:flex-col">
                             // {errorMessage ? (
                             // <div class="mb-2 md:mb-0">
@@ -209,9 +211,26 @@ fn Conversation() -> impl IntoView {
                                         set_user_prompt(event_target_value(&ev));
                                     }
 
+                                    on:keydown=move |ev| {
+                                        if ev.key() == "Enter" && !ev.shift_key() {
+                                            ev.prevent_default();
+                                            let user_message = Message::user(
+                                                user_prompt(),
+                                                conversation_id(),
+                                            );
+                                            let user_message_clone = user_message.clone();
+                                            if user_message.content != "" {
+                                                set_messages.update(|msgs| msgs.push(user_message_clone));
+                                                send_user_prompt.dispatch(AskAssistant { user_message });
+                                                set_user_prompt("".to_string());
+                                            }
+                                        }
+                                    }
+
                                     type="text"
                                     placeholder="Message assistant..."
                                     prop:value=user_prompt
+                                    node_ref=user_prompt_textarea
                                     // ref={textAreaRef} <- important for auto scrolling
                                     // tabIndex={0} <- no idea
                                     // data-id="root" <- no idea
@@ -223,8 +242,7 @@ fn Conversation() -> impl IntoView {
                                     rows=1
                                     placeholder="Send a message..."
                                     class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0 h-[24px] max-h-[200px] overflow-y-hidden"
-                                >// onKeyDown={handleKeypress}
-                                </textarea>
+                                ></textarea>
                                 <button
                                     class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
                                     on:click=move |ev| {
@@ -263,51 +281,6 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    // TODO: list of conversations should be loaded from the server in reaction to changes
-    // TODO: separately read conversation and messages
-    let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
-    let db_messages = create_resource(
-        || (),
-        |_| async {
-            get_conversation_messages(
-                Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap(),
-            )
-            .await
-            .unwrap()
-        },
-    );
-    let (messages, set_messages) = create_signal(Vec::<Message>::new());
-
-    let send_user_prompt = create_server_action::<AskAssistant>();
-    let assistant_response_value = send_user_prompt.value();
-
-    create_effect(move |_| {
-        if let Some(response) = assistant_response_value.get() {
-            let assistant_response = response.unwrap();
-            set_messages.update(|msgs| msgs.push(assistant_response));
-        }
-    });
-
-    let messages_view = move || {
-        messages()
-            .iter()
-            .map(|message| {
-                let message_class = match Role::from(message.role.as_ref()) {
-                    Role::User => "self-end bg-blue-500 text-white",
-                    Role::Assistant => "self-start bg-green-500 text-white",
-                    _ => panic!("system message not supported yet"),
-                };
-                view! {
-                    <div class=format!(
-                        "max-w-md p-4 mb-5 rounded-lg {message_class}",
-                    )>{message.content.clone()}</div>
-                }
-            })
-            .collect_view()
-    };
-
-    let (user_prompt, set_user_prompt) = create_signal(String::new());
-
     view! {
         <Title text="Welcome to LokAI!"/>
         <Stylesheet id="leptos" href="/pkg/lokai.css"/>
@@ -320,55 +293,6 @@ pub fn App() -> impl IntoView {
                 </div>
             </div>
             <Conversation/>
-
-        // <div class="flex flex-col h-screen bg-gray-50 place-items-center">
-        // <div class="flex-1 w-[720px] bg-gray-100">
-        // <Transition fallback=move || view! { <p>"Loading initial data..."</p> }>
-        // <div class="flex flex-col space-y-2 p-2">
-
-        // {
-        // if let Some(messages) = db_messages.get() {
-        // set_messages(messages)
-        // }
-        // messages_view
-        // }
-
-        // </div>
-        // </Transition>
-        // </div>
-        // <div class="flex-none h-20 w-[720px] bottom-0 place-items-center justify-center items-center bg-gray-200">
-        // <form on:submit=move |ev: SubmitEvent| {
-        // ev.prevent_default();
-        // let user_message = Message::user(user_prompt(), conversation_id);
-        // let user_message_clone = user_message.clone();
-        // if user_message.content != "" {
-        // set_messages.update(|msgs| msgs.push(user_message_clone));
-        // send_user_prompt.dispatch(AskAssistant { user_message });
-        // set_user_prompt("".to_string());
-        // }
-        // }>
-
-        // <div class="flex items-center p-2">
-        // <input
-        // on:input=move |ev| {
-        // set_user_prompt(event_target_value(&ev));
-        // }
-
-        // class="border border-gray-300 rounded-lg px-4 py-2 w-full"
-        // type="text"
-        // placeholder="Message assistant..."
-        // prop:value=user_prompt
-        // />
-        // <button
-        // class="ml-2 bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-        // type="submit"
-        // >
-        // Send
-        // </button>
-        // </div>
-        // </form>
-        // </div>
-        // </div>
         </main>
     }
 }

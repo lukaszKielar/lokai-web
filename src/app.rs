@@ -5,6 +5,7 @@ use crate::server::api::{get_conversation_messages, AskAssistant};
 
 use icondata::Icon;
 use leptos::ev::SubmitEvent;
+use leptos::html::Div;
 use leptos::*;
 use leptos_icons::Icon;
 use leptos_meta::*;
@@ -146,6 +147,15 @@ fn Conversation() -> impl IntoView {
         }
     });
 
+    let bottom_of_chat_div = create_node_ref::<Div>();
+    create_effect(move |_| {
+        let _ = messages();
+        if let Some(div) = bottom_of_chat_div.get() {
+            // TODO: I need to scroll with options
+            div.scroll_into_view();
+        }
+    });
+
     view! {
         <div class="flex max-w-full flex-1 flex-col">
             <div class="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1">
@@ -174,8 +184,9 @@ fn Conversation() -> impl IntoView {
                                                 view! { <MessageComponent message/> }
                                             })
                                             .collect_view()
-                                    }} <div class="w-full h-32 md:h-48 flex-shrink-0"></div>
-                                // <div ref=bottomOfChatRef></div>
+                                    }}
+                                    <div class="w-full h-32 md:h-48 flex-shrink-0"></div>
+                                    <div node_ref=bottom_of_chat_div></div>
                                 </Transition>
                             </div>
                             <div class="flex flex-col items-center text-sm dark:bg-gray-800"></div>
@@ -214,8 +225,6 @@ fn Conversation() -> impl IntoView {
                                     class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0 h-[24px] max-h-[200px] overflow-y-hidden"
                                 >// onKeyDown={handleKeypress}
                                 </textarea>
-                                // disabled={isLoading || message?.length === 0}
-                                // onClick={sendMessage}
                                 <button
                                     class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
                                     on:click=move |ev| {

@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::{Message, Role};
-
-const MODEL: &str = "mistral:7b";
-// const MODEL: &str = "llama2:7b";
-// const MODEL: &str = "tinyllama";
+use crate::{
+    models::{Message, Role},
+    MODEL,
+};
 
 pub fn default_model() -> String {
     MODEL.to_string()

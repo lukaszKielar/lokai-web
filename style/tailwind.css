@@ -27,6 +27,16 @@ body {
 	height: 100%;
 }
 
+.scroll-to-bottom--css-uzqrz-79elbk {
+	position: relative;
+}
+
+.scroll-to-bottom--css-ikyem-1n7m0yu {
+	height: 100%;
+	overflow-y: auto;
+	width: 100%;
+}
+
 textarea:focus {
 	outline: none;
 	box-shadow: none;

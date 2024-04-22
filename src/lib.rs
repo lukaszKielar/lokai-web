@@ -17,4 +17,6 @@ pub fn hydrate() {
     leptos::mount_to_body(App);
 }
 
-pub const MODEL: &str = "llama3:8b";
+// pub const MODEL: &str = "llama3:8b";
+// pub const MODEL: &str = "tinyllama:latest";
+pub const MODEL: &str = "mistral:7b";

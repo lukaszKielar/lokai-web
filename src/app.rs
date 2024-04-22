@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::models::{Message, Role};
 use crate::server::api::{get_conversation_messages, AskAssistant};
+use crate::MODEL;
 
 use leptos::html::{Div, Textarea};
 use leptos::*;
@@ -109,7 +110,7 @@ fn Conversation() -> impl IntoView {
     let (conversation_id, _) =
         create_signal(Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap());
 
-    let (model, set_model) = create_signal(String::from("mistral:7b"));
+    let (model, set_model) = create_signal(String::from(MODEL));
 
     let db_messages = create_resource(
         || (),

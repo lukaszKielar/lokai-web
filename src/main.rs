@@ -64,6 +64,8 @@ async fn main() {
             "/api/*fn_name",
             get(server_fn_handler).post(server_fn_handler),
         )
+        .route("/pkg/*path", get(file_and_error_handler))
+        .route("/favicon.ico", get(file_and_error_handler))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .fallback(file_and_error_handler)
         .with_state(app_state);

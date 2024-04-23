@@ -2,6 +2,7 @@ pub mod app;
 pub mod error_template;
 #[cfg(feature = "ssr")]
 pub mod fileserv;
+pub mod frontend;
 #[cfg(feature = "ssr")]
 pub mod handlers;
 pub mod models;

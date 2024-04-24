@@ -61,6 +61,25 @@ pub(crate) fn Conversation() -> impl IntoView {
     });
 
     let user_prompt_textarea = create_node_ref::<Textarea>();
+    const MIN_USER_PROMPT_TEXTAREA_HEIGHT: i32 = 24;
+    const MAX_USER_PROMPT_TEXTAREA_HEIGHT: i32 = 24;
+    let (user_prompt_textarea_style_height, user_prompt_textarea_style_height_set) =
+        create_signal(MIN_USER_PROMPT_TEXTAREA_HEIGHT);
+    // automatically resize textarea
+    create_effect(move |_| {
+        user_prompt_textarea_style_height_set(MIN_USER_PROMPT_TEXTAREA_HEIGHT);
+        // reset if user_prompt() if empty
+        let textarea_scroll_height = if user_prompt() == "" {
+            MIN_USER_PROMPT_TEXTAREA_HEIGHT
+        } else {
+            // SAFETY: effect is triggered by user input into Textarea, so element has been already loaded,
+            // so it's safe to unwrap NodeRef
+            user_prompt_textarea.get().unwrap().scroll_height()
+        };
+        logging::log!("scroll height: {textarea_scroll_height}");
+        let style_height = std::cmp::min(textarea_scroll_height, 200);
+        user_prompt_textarea_style_height_set(style_height)
+    });
 
     view! {
         <div class="flex max-w-full flex-1 flex-col">
@@ -124,21 +143,21 @@ pub(crate) fn Conversation() -> impl IntoView {
                                     }
 
                                     type="text"
-                                    placeholder="Message assistant..."
                                     prop:value=user_prompt
                                     node_ref=user_prompt_textarea
-                                    // ref={textAreaRef} <- important for auto scrolling
-                                    // tabIndex={0} <- no idea
-                                    // data-id="root" <- no idea
-                                    // style={{ <- no idea
-                                    // height: "24px", <- no idea
-                                    // maxHeight: "200px", <- no idea
-                                    // overflowY: "hidden", <- no idea
-                                    // }} <- no idea
-                                    rows=1
-                                    placeholder="Send a message..."
-                                    class="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0 h-[24px] max-h-[200px] overflow-y-hidden"
-                                ></textarea>
+                                    tab_index=0
+                                    placeholder="Message LokAI..."
+                                    class=move || {
+                                        format!(
+                                            "m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 h-[{MIN_USER_PROMPT_TEXTAREA_HEIGHT}px] max-h-[{MAX_USER_PROMPT_TEXTAREA_HEIGHT}px] overflow-y-auto",
+                                        )
+                                    }
+
+                                    style:height=move || {
+                                        format!("{}px", user_prompt_textarea_style_height())
+                                    }
+                                >
+                                </textarea>
                                 <button
                                     class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
                                     on:click=move |ev| {
@@ -164,7 +183,7 @@ pub(crate) fn Conversation() -> impl IntoView {
                         </div>
                     </form>
                     <div class="px-3 pt-2 pb-3 text-center text-xs text-black/50 dark:text-white/50 md:px-4 md:pt-3 md:pb-6">
-                        <span>Enjoy your self-hosted LokAI!</span>
+                        <span>"Enjoy your self-hosted LokAI!"</span>
                     </div>
                 </div>
             </div>

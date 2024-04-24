@@ -20,4 +20,5 @@ pub fn hydrate() {
 
 // pub const MODEL: &str = "llama3:8b";
 // pub const MODEL: &str = "tinyllama:latest";
-pub const MODEL: &str = "mistral:7b";
+// pub const MODEL: &str = "mistral:7b";
+pub const MODEL: &str = "phi3:3.8b";

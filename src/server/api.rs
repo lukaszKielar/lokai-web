@@ -1,4 +1,4 @@
-use crate::models::Message;
+use crate::models::{Conversation, Message};
 use leptos::{server, ServerFnError};
 use uuid::Uuid;
 
@@ -71,10 +71,38 @@ pub async fn get_conversation_messages(
     let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
-
     let messages = db::get_conversation_messages(db_pool, conversation_id)
         .await
         .unwrap();
 
     Ok(messages)
+}
+
+#[server(GetConversations, "/api")]
+pub async fn get_conversations() -> Result<Vec<Conversation>, ServerFnError> {
+    use super::db;
+    use leptos::use_context;
+    use sqlx::SqlitePool;
+
+    // TODO: remove me, this is simulating slow loading
+    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
+    let conversations = db::get_conversations(db_pool).await.unwrap();
+
+    Ok(conversations)
+}
+
+#[server(CreateConversations, "/api")]
+pub async fn create_conversation(conversation: Conversation) -> Result<(), ServerFnError> {
+    use super::db;
+    use leptos::use_context;
+    use sqlx::SqlitePool;
+
+    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
+    let _ = db::create_conversation(db_pool, conversation)
+        .await
+        .unwrap();
+
+    Ok(())
 }

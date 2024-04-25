@@ -77,30 +77,18 @@ impl Message {
     }
 }
 
-// TODO: it should contain: id(uuid), messages (vec<Message>))
-// Message should contain: id (uuid), persona (enum or string - human/assistant), text (string)
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[cfg_attr(feature = "ssr", derive(FromRow))]
 pub struct Conversation {
     pub id: Uuid,
-    // TODO: remove messages, they should be loaded separately by different endpoint
-    pub messages: Vec<Message>,
+    pub name: String,
 }
 
 impl Conversation {
-    // TODO: remove id argument, it can be automatically generated
-    pub fn new(id: Uuid) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
-            id,
-            messages: Vec::new(),
+            id: Uuid::new_v4(),
+            name,
         }
-    }
-
-    pub fn push_message(&mut self, message: Message) {
-        self.messages.push(message)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Message> + '_ {
-        self.messages.iter()
     }
 }

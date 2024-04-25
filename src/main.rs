@@ -11,6 +11,7 @@ async fn main() {
     use lokai::app::App;
     use lokai::fileserv::file_and_error_handler;
     use lokai::handlers::{leptos_routes_handler, server_fn_handler};
+    use lokai::server::db;
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
     use sqlx::SqlitePool;
@@ -39,6 +40,14 @@ async fn main() {
         .execute(&db_pool)
         .await
         .unwrap();
+    }
+    {
+        let db_pool = db_pool.clone();
+        let conversation =
+            lokai::models::Conversation::new(String::from("conversation 2 strasznie dluga nazwa"));
+        let _ = db::create_conversation(db_pool, conversation)
+            .await
+            .unwrap();
     }
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values

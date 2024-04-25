@@ -63,11 +63,11 @@ pub(crate) fn Conversation() -> impl IntoView {
     let user_prompt_textarea = create_node_ref::<Textarea>();
     const MIN_USER_PROMPT_TEXTAREA_HEIGHT: i32 = 24;
     const MAX_USER_PROMPT_TEXTAREA_HEIGHT: i32 = 24;
-    let (user_prompt_textarea_style_height, user_prompt_textarea_style_height_set) =
+    let (user_prompt_textarea_style_height, set_user_prompt_textarea_style_height) =
         create_signal(MIN_USER_PROMPT_TEXTAREA_HEIGHT);
     // automatically resize textarea
     create_effect(move |_| {
-        user_prompt_textarea_style_height_set(MIN_USER_PROMPT_TEXTAREA_HEIGHT);
+        set_user_prompt_textarea_style_height(MIN_USER_PROMPT_TEXTAREA_HEIGHT);
         // reset if user_prompt() if empty
         let textarea_scroll_height = if user_prompt() == "" {
             MIN_USER_PROMPT_TEXTAREA_HEIGHT
@@ -76,9 +76,8 @@ pub(crate) fn Conversation() -> impl IntoView {
             // so it's safe to unwrap NodeRef
             user_prompt_textarea.get().unwrap().scroll_height()
         };
-        logging::log!("scroll height: {textarea_scroll_height}");
         let style_height = std::cmp::min(textarea_scroll_height, 200);
-        user_prompt_textarea_style_height_set(style_height)
+        set_user_prompt_textarea_style_height(style_height)
     });
 
     view! {

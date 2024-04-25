@@ -2,7 +2,10 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-use crate::frontend::views::{Chat, Home, NotFound};
+use crate::frontend::{
+    components::Sidebar,
+    views::{Chat, Home},
+};
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -15,11 +18,17 @@ pub fn App() -> impl IntoView {
         <Meta charset="UTF-8"/>
         <Router>
             <main>
-                <Routes>
-                    <Route path="/" view=Home/>
-                    <Route path="/c/:id" view=Chat/>
-                    <Route path="/*any" view=NotFound/>
-                </Routes>
+                <div class="overflow-hidden w-full h-screen relative flex">
+                    <div class="dark hidden flex-shrink-0 bg-gray-900 md:flex md:w-[260px] md:flex-col">
+                        <div class="flex h-full min-h-0 flex-col ">
+                            <Sidebar/>
+                        </div>
+                    </div>
+                    <Routes>
+                        <Route path="/" view=Home/>
+                        <Route path="/c/:id" view=Chat/>
+                    </Routes>
+                </div>
             </main>
         </Router>
     }

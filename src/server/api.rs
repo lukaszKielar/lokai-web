@@ -2,6 +2,12 @@ use crate::models::{Conversation, Message};
 use leptos::{server, ServerFnError};
 use uuid::Uuid;
 
+#[cfg(feature = "ssr")]
+async fn slow_down_db() {
+    use tokio;
+    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+}
+
 // TODO: save every prompt, response and context to database, async thread
 // TODO: this function should take id of the conversation, prompt and context (history of conversation)
 #[server(AskAssistant, "/api")]
@@ -68,7 +74,7 @@ pub async fn get_conversation_messages(
     use sqlx::SqlitePool;
 
     // TODO: remove me
-    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    slow_down_db().await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let messages = db::get_conversation_messages(db_pool, conversation_id)
@@ -85,7 +91,7 @@ pub async fn get_conversations() -> Result<Vec<Conversation>, ServerFnError> {
     use sqlx::SqlitePool;
 
     // TODO: remove me, this is simulating slow loading
-    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    slow_down_db().await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let conversations = db::get_conversations(db_pool).await.unwrap();

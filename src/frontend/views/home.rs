@@ -2,6 +2,7 @@ use leptos::*;
 
 use crate::frontend::components::{Conversation, Sidebar};
 
+// TODO: create sidebar once and pass it as a context in the app
 #[component]
 pub(crate) fn Home() -> impl IntoView {
     view! {
@@ -11,7 +12,8 @@ pub(crate) fn Home() -> impl IntoView {
                     <Sidebar/>
                 </div>
             </div>
-            <Conversation/>
+        // TODO: create NewConversation view
+        // <Conversation/>
         </div>
     }
 }

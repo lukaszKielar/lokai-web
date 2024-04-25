@@ -4,6 +4,7 @@ async fn main() {
     use std::env;
     use std::str::FromStr;
 
+    use axum::response::Redirect;
     use axum::routing::get;
     use axum::Router;
     use leptos::*;
@@ -75,6 +76,8 @@ async fn main() {
         )
         .route("/pkg/*path", get(file_and_error_handler))
         .route("/favicon.ico", get(file_and_error_handler))
+        // TODO: I should add static html for all not found
+        .route("/*any", get(|| async { Redirect::permanent("/") }))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .fallback(file_and_error_handler)
         .with_state(app_state);

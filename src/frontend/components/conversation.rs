@@ -1,8 +1,7 @@
-use std::str::FromStr;
-
 use leptos::html::{Div, Textarea};
 use leptos::*;
 use leptos_icons::Icon;
+use leptos_router::use_params_map;
 use uuid::Uuid;
 
 use crate::frontend::components::message::Messages;
@@ -11,20 +10,22 @@ use crate::{models::Message as MessageModel, MODEL};
 
 #[component]
 pub(crate) fn Conversation() -> impl IntoView {
-    let (conversation_id, _) =
-        create_signal(Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap());
+    let params = use_params_map();
+    let conversation_id = move || {
+        let a = params
+            .get()
+            .get("id")
+            .map(|p| p.parse::<Uuid>().unwrap())
+            .unwrap();
+        logging::log!("conversation_id: {:?}", a);
+        a
+    };
 
-    let (model, set_model) = create_signal(String::from(MODEL));
+    let (model, _set_model) = create_signal(String::from(MODEL));
 
     let db_messages = create_resource(
-        || (),
-        |_| async {
-            get_conversation_messages(
-                Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap(),
-            )
-            .await
-            .unwrap()
-        },
+        move || conversation_id(),
+        move |id| async move { get_conversation_messages(id).await.unwrap() },
     );
 
     let (messages, set_messages) = create_signal(Vec::<MessageModel>::new());

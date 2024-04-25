@@ -1,19 +1,24 @@
 use leptos::*;
 use leptos_icons::Icon;
+use leptos_router::A;
 
 use crate::models;
 use crate::server::api::get_conversations;
 
 #[component]
-fn ConversationSbar(name: MaybeSignal<String>) -> impl IntoView {
+fn ConversationSbar(conversation: MaybeSignal<models::Conversation>) -> impl IntoView {
+    let conversation = conversation.get();
     view! {
         <div class="flex flex-col gap-2 pb-2 text-gray-100 text-sm">
-            <a class="flex p-3 items-center gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all hover:pr-4 group">
+            <A
+                href=format!("/c/{}", conversation.id)
+                class="flex p-3 items-center gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all hover:pr-4 group"
+            >
                 <Icon icon=icondata::LuMessageSquare class="h-4 w-4"/>
                 <div class="flex-1 text-ellipsis align-middle h-6 overflow-hidden break-all relative">
-                    {name.get()}
+                    {conversation.name}
                 </div>
-            </a>
+            </A>
         </div>
     }
 }
@@ -53,7 +58,7 @@ fn ConversationsSbar() -> impl IntoView {
             {conversations()
                 .into_iter()
                 .map(|c| {
-                    view! { <ConversationSbar name=c.name.into()/> }
+                    view! { <ConversationSbar conversation=c.into()/> }
                 })
                 .collect_view()}
         </Transition>
@@ -66,7 +71,10 @@ pub(crate) fn Sidebar() -> impl IntoView {
     view! {
         <div class="scrollbar-trigger flex h-full w-full flex-1 items-start border-white/20">
             <nav class="flex h-full flex-1 flex-col space-y-1 p-2">
-                <a class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm mb-1 flex-shrink-0 border border-white/20">
+                <a
+                    href="/"
+                    class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm mb-1 flex-shrink-0 border border-white/20"
+                >
                     <Icon icon=icondata::LuMessageSquarePlus class="h-4 w-4"/>
                     "New chat"
                 </a>

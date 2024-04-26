@@ -6,7 +6,7 @@ use crate::models;
 use crate::server::api::get_conversations;
 
 #[component]
-fn ConversationSbar(conversation: MaybeSignal<models::Conversation>) -> impl IntoView {
+fn Conversation(conversation: MaybeSignal<models::Conversation>) -> impl IntoView {
     let conversation = conversation.get();
     view! {
         <div class="flex flex-col gap-2 pb-2 text-gray-100 text-sm">
@@ -24,7 +24,7 @@ fn ConversationSbar(conversation: MaybeSignal<models::Conversation>) -> impl Int
 }
 
 #[component]
-fn ConversationLoadingSbar() -> impl IntoView {
+fn ConversationsLoading() -> impl IntoView {
     let div_cls = "h-2 w-2 bg-white rounded-full animate-bounce";
     view! {
         <div class="flex flex-col gap-2 pb-2 text-gray-100 text-sm">
@@ -39,7 +39,7 @@ fn ConversationLoadingSbar() -> impl IntoView {
 }
 
 #[component]
-fn ConversationsSbar() -> impl IntoView {
+fn Conversations() -> impl IntoView {
     let db_conversations = create_resource(|| (), |_| async { get_conversations().await.unwrap() });
 
     let (conversations, set_conversations) = create_signal(Vec::<models::Conversation>::new());
@@ -48,7 +48,7 @@ fn ConversationsSbar() -> impl IntoView {
         <Transition fallback=move || {
             view! {
                 <>
-                    <ConversationLoadingSbar/>
+                    <ConversationsLoading/>
                 </>
             }
         }>
@@ -58,7 +58,7 @@ fn ConversationsSbar() -> impl IntoView {
             {conversations()
                 .into_iter()
                 .map(|c| {
-                    view! { <ConversationSbar conversation=c.into()/> }
+                    view! { <Conversation conversation=c.into()/> }
                 })
                 .collect_view()}
         </Transition>
@@ -79,7 +79,7 @@ pub(crate) fn Sidebar() -> impl IntoView {
                     "New chat"
                 </a>
                 <div class="flex-col flex-1 overflow-y-auto border-b border-white/20">
-                    <ConversationsSbar/>
+                    <Conversations/>
                 </div>
                 <a class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm">
                     <Icon icon=icondata::LuTrash2 class="h-4 w-4"/>

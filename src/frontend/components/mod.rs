@@ -1,6 +1,6 @@
-mod conversation;
 mod message;
+mod prompt;
 mod sidebar;
 
-pub(crate) use conversation::Conversation;
+pub(crate) use message::Messages;
 pub(crate) use sidebar::Sidebar;

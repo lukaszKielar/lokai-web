@@ -12,13 +12,11 @@ use crate::{models::Message as MessageModel, MODEL};
 pub(crate) fn Conversation() -> impl IntoView {
     let params = use_params_map();
     let conversation_id = move || {
-        let a = params
+        params
             .get()
             .get("id")
             .map(|p| p.parse::<Uuid>().unwrap())
-            .unwrap();
-        logging::log!("conversation_id: {:?}", a);
-        a
+            .unwrap()
     };
 
     let (model, _set_model) = create_signal(String::from(MODEL));

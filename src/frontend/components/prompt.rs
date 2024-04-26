@@ -99,8 +99,7 @@ pub(crate) fn Prompt(
         };
     });
 
-    let on_click = move |ev: MouseEvent| {
-        ev.prevent_default();
+    let dispatch = move || {
         let user_message = models::Message::user(user_prompt(), conversation_id());
         let user_message_clone = user_message.clone();
         if user_message.content != "" {
@@ -110,17 +109,16 @@ pub(crate) fn Prompt(
         }
     };
 
+    let on_click = move |ev: MouseEvent| {
+        ev.prevent_default();
+        dispatch();
+    };
+
     let on_input = move |ev| set_user_prompt(event_target_value(&ev));
     let on_keydown = move |ev: KeyboardEvent| {
         if ev.key() == "Enter" && !ev.shift_key() {
             ev.prevent_default();
-            let user_message = models::Message::user(user_prompt(), conversation_id());
-            let user_message_clone = user_message.clone();
-            if user_message.content != "" {
-                set_messages.update(|msgs| msgs.push(user_message_clone));
-                send_user_prompt.dispatch(AskAssistant { user_message });
-                set_user_prompt("".to_string());
-            }
+            dispatch();
         }
     };
 

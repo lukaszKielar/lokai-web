@@ -2,10 +2,9 @@ use leptos::{html::Div, *};
 use leptos_router::use_params_map;
 use uuid::Uuid;
 
-use crate::app::MessagesContext;
+use crate::app::{MessagesContext, SettingsContext};
 use crate::frontend::components::{Messages, Prompt};
 use crate::server::api::get_conversation_messages;
-use crate::MODEL;
 
 #[component]
 pub(crate) fn Chat() -> impl IntoView {
@@ -18,8 +17,6 @@ pub(crate) fn Chat() -> impl IntoView {
             .unwrap()
     };
 
-    let (model, _set_model) = create_signal(String::from(MODEL));
-
     let db_messages = create_resource(
         move || conversation_id(),
         move |id| async move { get_conversation_messages(id).await.unwrap() },
@@ -30,6 +27,8 @@ pub(crate) fn Chat() -> impl IntoView {
         messages,
         set_messages,
     } = use_context::<MessagesContext>().unwrap();
+    // SAFETY: it's safe to unwrap because I provide context in App
+    let SettingsContext { model } = use_context().unwrap();
 
     let bottom_of_chat_div = create_node_ref::<Div>();
     create_effect(move |_| {

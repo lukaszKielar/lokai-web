@@ -2,18 +2,19 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 
-use crate::{
-    frontend::{
-        components::Sidebar,
-        views::{Chat, Home},
-    },
-    models,
-};
+use crate::frontend::components::Sidebar;
+use crate::frontend::views::{Chat, Home};
+use crate::{models, MODEL};
 
 #[derive(Copy, Clone)]
 pub struct MessagesContext {
     pub messages: ReadSignal<Vec<models::Message>>,
     pub set_messages: WriteSignal<Vec<models::Message>>,
+}
+
+#[derive(Copy, Clone)]
+pub struct SettingsContext {
+    pub model: ReadSignal<String>,
 }
 
 #[component]
@@ -26,6 +27,9 @@ pub fn App() -> impl IntoView {
         messages,
         set_messages,
     });
+
+    let (model, _) = create_signal(String::from(MODEL));
+    provide_context(SettingsContext { model });
 
     view! {
         <Title text="Welcome to LokAI!"/>

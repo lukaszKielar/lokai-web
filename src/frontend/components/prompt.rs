@@ -16,7 +16,7 @@ where
         <button
             class="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
             on:click=on_click
-            disabled=button_disabled()
+            disabled=button_disabled
         >
             <Icon icon=icondata::LuSend class="h-4 w-4 mr-1 text-white "/>
         </button>

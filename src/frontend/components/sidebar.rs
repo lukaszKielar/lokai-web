@@ -40,8 +40,10 @@ fn ConversationsLoading() -> impl IntoView {
 
 #[component]
 fn Conversations() -> impl IntoView {
+    // TODO: reload when new conversation is added
     let db_conversations = create_resource(|| (), |_| async { get_conversations().await.unwrap() });
 
+    // TODO: use context to share conversations
     let (conversations, set_conversations) = create_signal(Vec::<models::Conversation>::new());
 
     view! {

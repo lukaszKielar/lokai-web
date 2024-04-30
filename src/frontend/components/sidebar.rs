@@ -2,6 +2,7 @@ use leptos::*;
 use leptos_icons::Icon;
 use leptos_router::A;
 
+use crate::app::AppContext;
 use crate::models;
 use crate::server::api::get_conversations;
 
@@ -40,11 +41,13 @@ fn ConversationsLoading() -> impl IntoView {
 
 #[component]
 fn Conversations() -> impl IntoView {
-    // TODO: reload when new conversation is added
-    let db_conversations = create_resource(|| (), |_| async { get_conversations().await.unwrap() });
+    // SAFETY: it's safe to unwrap because I provide context in App
+    let AppContext {
+        conversations,
+        model: _,
+    } = use_context().unwrap();
 
-    // TODO: use context to share conversations
-    let (conversations, set_conversations) = create_signal(Vec::<models::Conversation>::new());
+    let db_conversations = create_resource(|| (), |_| async { get_conversations().await.unwrap() });
 
     view! {
         <Transition fallback=move || {
@@ -54,15 +57,19 @@ fn Conversations() -> impl IntoView {
                 </>
             }
         }>
-            {if let Some(conversations) = db_conversations.get() {
-                set_conversations(conversations);
+            {if let Some(convs) = db_conversations.get() {
+                conversations.set(convs);
             }}
-            {conversations()
-                .into_iter()
-                .map(|c| {
-                    view! { <Conversation conversation=c.into()/> }
-                })
-                .collect_view()}
+            {move || {
+                conversations
+                    .get()
+                    .into_iter()
+                    .map(|c| {
+                        view! { <Conversation conversation=c.into()/> }
+                    })
+                    .collect_view()
+            }}
+
         </Transition>
     }
 }

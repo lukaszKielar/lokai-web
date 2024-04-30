@@ -1,10 +1,12 @@
+use leptos::ev::{Event, KeyboardEvent, MouseEvent};
 use leptos::{html::Div, *};
 use leptos_router::use_params_map;
 use uuid::Uuid;
 
-use crate::app::{MessagesContext, SettingsContext};
+use crate::app::AppContext;
 use crate::frontend::components::{Messages, Prompt};
-use crate::server::api::get_conversation_messages;
+use crate::models;
+use crate::server::api::{get_conversation_messages, AskAssistant};
 
 #[component]
 pub(crate) fn Chat() -> impl IntoView {
@@ -17,28 +19,65 @@ pub(crate) fn Chat() -> impl IntoView {
             .unwrap()
     };
 
+    let (user_prompt, set_user_prompt) = create_signal(String::new());
+    let messages = create_rw_signal(Vec::<models::Message>::new());
+
+    // SAFETY: it's safe to unwrap because I provide context in App
+    let AppContext {
+        conversations: _,
+        model,
+    } = use_context().unwrap();
+
     let db_messages = create_resource(
         move || conversation_id(),
         move |id| async move { get_conversation_messages(id).await.unwrap() },
     );
 
-    // SAFETY: it's safe to unwrap because I provide context in App
-    let MessagesContext {
-        messages,
-        set_messages,
-    } = use_context::<MessagesContext>().unwrap();
-    // SAFETY: it's safe to unwrap because I provide context in App
-    let SettingsContext { model } = use_context().unwrap();
-
     let bottom_of_chat_div = create_node_ref::<Div>();
     create_effect(move |_| {
-        let _ = messages();
+        let _ = messages.get();
         if let Some(div) = bottom_of_chat_div.get() {
             // TODO: I need to scroll with options
             // https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoView
             div.scroll_into_view();
         }
     });
+
+    let send_user_prompt = create_server_action::<AskAssistant>();
+
+    let dispatch = move || {
+        let user_message = models::Message::user(user_prompt(), conversation_id());
+        let user_message_clone = user_message.clone();
+        if user_message.content != "" {
+            messages.update(|msgs| msgs.push(user_message_clone));
+            send_user_prompt.dispatch(AskAssistant {
+                user_message,
+                new_conversation: false,
+            });
+            set_user_prompt("".to_string());
+        }
+    };
+
+    let on_click = move |ev: MouseEvent| {
+        ev.prevent_default();
+        dispatch();
+    };
+    let on_input = move |ev: Event| set_user_prompt(event_target_value(&ev));
+    let on_keydown = move |ev: KeyboardEvent| {
+        if ev.key() == "Enter" && !ev.shift_key() {
+            ev.prevent_default();
+            dispatch();
+        }
+    };
+
+    // create_effect(move |_| {
+    //     if messages()
+    //         .iter()
+    //         .any(|m| m.conversation_id != conversation_id())
+    //     {
+    //         set_messages(Vec::new())
+    //     }
+    // });
 
     view! {
         <div class="flex max-w-full flex-1 flex-col">
@@ -54,8 +93,9 @@ pub(crate) fn Chat() -> impl IntoView {
                                         </div>
                                     }
                                 }>
-                                    {if let Some(messages) = db_messages.get() {
-                                        set_messages(messages);
+
+                                    {if let Some(msgs) = db_messages.get() {
+                                        messages.set(msgs);
                                     }}
                                     <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
                                         "Model: " <b>{model}</b>
@@ -69,8 +109,12 @@ pub(crate) fn Chat() -> impl IntoView {
                     </div>
                 </div>
                 <Prompt
-                    conversation_id=MaybeSignal::derive(conversation_id)
-                    set_messages=set_messages
+                    user_prompt=user_prompt
+                    set_messages=messages.write_only()
+                    on_input=on_input
+                    on_click=on_click
+                    on_keydown=on_keydown
+                    send_user_prompt=send_user_prompt
                 />
             </div>
         </div>

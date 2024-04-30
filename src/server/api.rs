@@ -8,16 +8,33 @@ async fn slow_down_db() {
     let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 }
 
-// TODO: save every prompt, response and context to database, async thread
-// TODO: this function should take id of the conversation, prompt and context (history of conversation)
 #[server(AskAssistant, "/api")]
-pub async fn ask_assistant(user_message: Message) -> Result<Message, ServerFnError> {
+pub async fn ask_assistant(
+    user_message: Message,
+    new_conversation: bool,
+) -> Result<Message, ServerFnError> {
     use super::{db, ollama::*};
     use leptos::use_context;
     use sqlx::SqlitePool;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
     let conversation_id = user_message.conversation_id;
+
+    {
+        if new_conversation {
+            let db_pool = db_pool.clone();
+            // TODO: handle error when saving conversation to DB
+            let _ = db::create_conversation(
+                db_pool,
+                Conversation {
+                    id: conversation_id,
+                    name: user_message.content.clone(),
+                },
+            )
+            .await
+            .unwrap();
+        }
+    }
 
     {
         let db_pool = db_pool.clone();
@@ -97,18 +114,4 @@ pub async fn get_conversations() -> Result<Vec<Conversation>, ServerFnError> {
     let conversations = db::get_conversations(db_pool).await.unwrap();
 
     Ok(conversations)
-}
-
-#[server(CreateConversations, "/api")]
-pub async fn create_conversation(conversation: Conversation) -> Result<(), ServerFnError> {
-    use super::db;
-    use leptos::use_context;
-    use sqlx::SqlitePool;
-
-    let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
-    let _ = db::create_conversation(db_pool, conversation)
-        .await
-        .unwrap();
-
-    Ok(())
 }

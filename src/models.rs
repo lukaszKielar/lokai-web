@@ -77,7 +77,7 @@ impl Message {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ssr", derive(FromRow))]
 pub struct Conversation {
     pub id: Uuid,

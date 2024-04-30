@@ -7,13 +7,8 @@ use crate::frontend::views::{Chat, Home};
 use crate::{models, MODEL};
 
 #[derive(Copy, Clone)]
-pub struct MessagesContext {
-    pub messages: ReadSignal<Vec<models::Message>>,
-    pub set_messages: WriteSignal<Vec<models::Message>>,
-}
-
-#[derive(Copy, Clone)]
-pub struct SettingsContext {
+pub struct AppContext {
+    pub conversations: RwSignal<Vec<models::Conversation>>,
     pub model: ReadSignal<String>,
 }
 
@@ -22,14 +17,12 @@ pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    let (messages, set_messages) = create_signal(Vec::<models::Message>::new());
-    provide_context(MessagesContext {
-        messages,
-        set_messages,
-    });
-
+    let conversations = create_rw_signal(Vec::<models::Conversation>::new());
     let (model, _) = create_signal(String::from(MODEL));
-    provide_context(SettingsContext { model });
+    provide_context(AppContext {
+        model,
+        conversations,
+    });
 
     view! {
         <Title text="Welcome to LokAI!"/>

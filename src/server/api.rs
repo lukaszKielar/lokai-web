@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[cfg(feature = "ssr")]
 async fn slow_down_db() {
     use tokio;
-    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+    let _ = tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 }
 
 #[server(AskAssistant, "/api")]

@@ -1,4 +1,4 @@
-use leptos::ev::{Event, KeyboardEvent, MouseEvent};
+use leptos::ev::{KeyboardEvent, MouseEvent};
 use leptos::{html::Div, *};
 use leptos_router::use_params_map;
 use uuid::Uuid;
@@ -19,7 +19,7 @@ pub(crate) fn Chat() -> impl IntoView {
             .unwrap()
     };
 
-    let (user_prompt, set_user_prompt) = create_signal(String::new());
+    let user_prompt = create_rw_signal(String::new());
     let messages = create_rw_signal(Vec::<models::Message>::new());
 
     // SAFETY: it's safe to unwrap because I provide context in App
@@ -46,7 +46,7 @@ pub(crate) fn Chat() -> impl IntoView {
     let send_user_prompt = create_server_action::<AskAssistant>();
 
     let dispatch = move || {
-        let user_message = models::Message::user(user_prompt(), conversation_id());
+        let user_message = models::Message::user(user_prompt.get(), conversation_id());
         let user_message_clone = user_message.clone();
         if user_message.content != "" {
             messages.update(|msgs| msgs.push(user_message_clone));
@@ -54,7 +54,7 @@ pub(crate) fn Chat() -> impl IntoView {
                 user_message,
                 new_conversation: false,
             });
-            set_user_prompt("".to_string());
+            user_prompt.set("".to_string());
         }
     };
 
@@ -62,7 +62,6 @@ pub(crate) fn Chat() -> impl IntoView {
         ev.prevent_default();
         dispatch();
     };
-    let on_input = move |ev: Event| set_user_prompt(event_target_value(&ev));
     let on_keydown = move |ev: KeyboardEvent| {
         if ev.key() == "Enter" && !ev.shift_key() {
             ev.prevent_default();
@@ -70,14 +69,13 @@ pub(crate) fn Chat() -> impl IntoView {
         }
     };
 
-    // create_effect(move |_| {
-    //     if messages()
-    //         .iter()
-    //         .any(|m| m.conversation_id != conversation_id())
-    //     {
-    //         set_messages(Vec::new())
-    //     }
-    // });
+    create_effect(move |_| {
+        if let Some(response) = send_user_prompt.value().get() {
+            // TODO: handle errors
+            let assistant_response = response.unwrap();
+            messages.update(|msgs| msgs.push(assistant_response));
+        };
+    });
 
     view! {
         <div class="flex max-w-full flex-1 flex-col">
@@ -93,6 +91,7 @@ pub(crate) fn Chat() -> impl IntoView {
                                         </div>
                                     }
                                 }>
+                                    // TODO: use For and properly update only necessary elements
 
                                     {if let Some(msgs) = db_messages.get() {
                                         messages.set(msgs);
@@ -110,8 +109,6 @@ pub(crate) fn Chat() -> impl IntoView {
                 </div>
                 <Prompt
                     user_prompt=user_prompt
-                    set_messages=messages.write_only()
-                    on_input=on_input
                     on_click=on_click
                     on_keydown=on_keydown
                     send_user_prompt=send_user_prompt

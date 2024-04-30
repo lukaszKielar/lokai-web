@@ -23,15 +23,13 @@ where
 }
 
 #[component]
-fn PromptTextArea<FIn, FKdn>(
-    on_input: FIn,
+fn PromptTextArea<FKdn>(
     on_keydown: FKdn,
-    #[prop(into)] user_prompt: Signal<String>,
+    user_prompt: RwSignal<String>,
     #[prop(default = 24)] min_height: i32,
     #[prop(default = 216)] max_height: i32,
 ) -> impl IntoView
 where
-    FIn: Fn(Event) + 'static,
     FKdn: Fn(KeyboardEvent) + 'static,
 {
     let textarea = create_node_ref::<Textarea>();
@@ -40,7 +38,7 @@ where
     create_effect(move |_| {
         set_dynamic_height(min_height);
         // reset if user_prompt() if empty
-        let scroll_height = if user_prompt() == "" {
+        let scroll_height = if user_prompt.get() == "" {
             min_height
         } else {
             // SAFETY: effect is triggered by user input into Textarea, so element has been already loaded,
@@ -53,10 +51,10 @@ where
 
     view! {
         <textarea
-            on:input=on_input
+            on:input=move |ev: Event| user_prompt.set(event_target_value(&ev))
             on:keydown=on_keydown
             type="text"
-            prop:value=user_prompt
+            prop:value=move || user_prompt.get()
             node_ref=textarea
             tab_index=0
             placeholder="Message LokAI..."
@@ -72,10 +70,8 @@ where
 }
 
 #[component]
-pub(crate) fn Prompt<FCl, FKdn, FIn, I>(
-    user_prompt: ReadSignal<String>,
-    set_messages: WriteSignal<Vec<models::Message>>,
-    on_input: FIn,
+pub(crate) fn Prompt<FCl, FKdn, I>(
+    user_prompt: RwSignal<String>,
     on_click: FCl,
     on_keydown: FKdn,
     send_user_prompt: Action<I, Result<models::Message, ServerFnError>>,
@@ -83,17 +79,9 @@ pub(crate) fn Prompt<FCl, FKdn, FIn, I>(
 where
     FCl: Fn(MouseEvent) + 'static,
     FKdn: Fn(KeyboardEvent) + 'static,
-    FIn: Fn(Event) + 'static,
     I: 'static,
 {
     let (button_disabled, set_button_disabled) = create_signal(true);
-
-    create_effect(move |_| {
-        if let Some(response) = send_user_prompt.value().get() {
-            let assistant_response = response.unwrap();
-            set_messages.update(|msgs| msgs.push(assistant_response));
-        }
-    });
 
     create_effect(move |_| {
         if user_prompt().len() == 0 || send_user_prompt.pending().get() {
@@ -109,11 +97,7 @@ where
 
                 <div class="relative flex flex-col h-full flex-1 items-stretch md:flex-col">
                     <div class="flex flex-col w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-gray-700 rounded-md shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
-                        <PromptTextArea
-                            on_input=on_input
-                            on_keydown=on_keydown
-                            user_prompt=user_prompt
-                        />
+                        <PromptTextArea on_keydown=on_keydown user_prompt=user_prompt/>
                         <PromptSubmitButton on_click=on_click button_disabled=button_disabled/>
                     </div>
                 </div>

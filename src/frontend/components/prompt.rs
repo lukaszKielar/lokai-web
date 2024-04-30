@@ -1,16 +1,15 @@
 use icondata;
 use leptos::ev::{Event, KeyboardEvent, MouseEvent};
-use leptos::{html::Textarea, *};
+use leptos::html::Textarea;
+use leptos::*;
 use leptos_icons::Icon;
-use uuid::Uuid;
 
 use crate::models;
-use crate::server::api::AskAssistant;
 
 #[component]
-fn PromptSubmitButton<F>(on_click: F, button_disabled: ReadSignal<bool>) -> impl IntoView
+fn PromptSubmitButton<FCl>(on_click: FCl, button_disabled: ReadSignal<bool>) -> impl IntoView
 where
-    F: Fn(MouseEvent) + 'static,
+    FCl: Fn(MouseEvent) + 'static,
 {
     view! {
         <button
@@ -67,25 +66,30 @@ where
                 )
             }
 
-            style:height=move || { format!("{}px", dynamic_height()) }
+            style:height=move || format!("{}px", dynamic_height())
         ></textarea>
     }
 }
 
 #[component]
-pub(crate) fn Prompt(
-    #[prop(default = 24)] min_textarea_height: i32,
-    #[prop(default = 216)] max_textarea_height: i32,
-    conversation_id: MaybeSignal<Uuid>,
+pub(crate) fn Prompt<FCl, FKdn, FIn, I>(
+    user_prompt: ReadSignal<String>,
     set_messages: WriteSignal<Vec<models::Message>>,
-) -> impl IntoView {
-    let (user_prompt, set_user_prompt) = create_signal(String::new());
+    on_input: FIn,
+    on_click: FCl,
+    on_keydown: FKdn,
+    send_user_prompt: Action<I, Result<models::Message, ServerFnError>>,
+) -> impl IntoView
+where
+    FCl: Fn(MouseEvent) + 'static,
+    FKdn: Fn(KeyboardEvent) + 'static,
+    FIn: Fn(Event) + 'static,
+    I: 'static,
+{
     let (button_disabled, set_button_disabled) = create_signal(true);
 
-    let send_user_prompt = create_server_action::<AskAssistant>();
-    let assistant_response_value = send_user_prompt.value();
     create_effect(move |_| {
-        if let Some(response) = assistant_response_value.get() {
+        if let Some(response) = send_user_prompt.value().get() {
             let assistant_response = response.unwrap();
             set_messages.update(|msgs| msgs.push(assistant_response));
         }
@@ -99,29 +103,6 @@ pub(crate) fn Prompt(
         };
     });
 
-    let dispatch = move || {
-        let user_message = models::Message::user(user_prompt(), conversation_id());
-        let user_message_clone = user_message.clone();
-        if user_message.content != "" {
-            set_messages.update(|msgs| msgs.push(user_message_clone));
-            send_user_prompt.dispatch(AskAssistant { user_message });
-            set_user_prompt("".to_string());
-        }
-    };
-
-    let on_click = move |ev: MouseEvent| {
-        ev.prevent_default();
-        dispatch();
-    };
-
-    let on_input = move |ev| set_user_prompt(event_target_value(&ev));
-    let on_keydown = move |ev: KeyboardEvent| {
-        if ev.key() == "Enter" && !ev.shift_key() {
-            ev.prevent_default();
-            dispatch();
-        }
-    };
-
     view! {
         <div class="absolute bottom-0 left-0 w-full border-t md:border-t-0 dark:border-white/20 md:border-transparent md:dark:border-transparent md:bg-vert-light-gradient bg-white dark:bg-gray-800 md:!bg-transparent dark:md:bg-vert-dark-gradient pt-2">
             <form class="stretch mx-2 flex flex-row gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
@@ -131,8 +112,6 @@ pub(crate) fn Prompt(
                         <PromptTextArea
                             on_input=on_input
                             on_keydown=on_keydown
-                            min_height=min_textarea_height
-                            max_height=max_textarea_height
                             user_prompt=user_prompt
                         />
                         <PromptSubmitButton on_click=on_click button_disabled=button_disabled/>

@@ -94,7 +94,14 @@ pub async fn get_conversation_messages(
     slow_down_db().await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
-    let messages = db::get_conversation_messages(db_pool, conversation_id)
+    let conversation = {
+        let db_pool = db_pool.clone();
+        db::get_conversation(db_pool, conversation_id)
+            .await
+            .map_err(|err| ServerFnError::new(err))?
+            .ok_or(ServerFnError::new("Conversation doesn't exist".to_string()))?
+    };
+    let messages = db::get_conversation_messages(db_pool, conversation.id)
         .await
         .unwrap();
 

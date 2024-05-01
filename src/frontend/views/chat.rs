@@ -84,24 +84,19 @@ pub(crate) fn Chat() -> impl IntoView {
                     <div class="scroll-to-bottom--css-ikyem-79elbk h-full dark:bg-gray-800">
                         <div class="scroll-to-bottom--css-ikyem-1n7m0yu">
                             <div class="flex flex-col items-center text-sm bg-gray-800">
-                                <Transition fallback=move || {
-                                    view! {
-                                        <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
-                                            "Loading initial data..."
-                                        </div>
-                                    }
-                                }>
-                                    // TODO: use For and properly update only necessary elements
-
+                                <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
+                                    "Model: " <b>{model}</b>
+                                </div>
+                                <Transition>
                                     {if let Some(msgs) = db_messages.get() {
                                         messages.set(msgs);
                                     }}
-                                    <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
-                                        "Model: " <b>{model}</b>
-                                    </div> <Messages messages=messages.into()/>
-                                    <div class="w-full h-32 flex-shrink-0"></div>
-                                    <div node_ref=bottom_of_chat_div></div>
+
                                 </Transition>
+                                // TODO: use For and properly update only necessary elements
+                                <Messages messages=messages.into()/>
+                                <div class="w-full h-32 flex-shrink-0"></div>
+                                <div node_ref=bottom_of_chat_div></div>
                             </div>
                             <div class="flex flex-col items-center text-sm dark:bg-gray-800"></div>
                         </div>

@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -68,7 +70,6 @@ async fn main() {
         routes: routes.clone(),
     };
 
-    // build our application with a route
     let app = Router::new()
         .route(
             "/api/*fn_name",
@@ -76,6 +77,7 @@ async fn main() {
         )
         .route("/pkg/*path", get(file_and_error_handler))
         .route("/favicon.ico", get(file_and_error_handler))
+        .route("/ws", get(websocket))
         // TODO: I should add static html for all not found
         .route("/*any", get(|| async { Redirect::permanent("/") }))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
@@ -94,4 +96,103 @@ pub fn main() {
     // no client-side main function
     // unless we want this to work with e.g., Trunk for a purely client-side app
     // see lib.rs for hydration function instead
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature="ssr")] {
+        use axum::extract::{ws::{WebSocket, Message as AxumWSMessage, WebSocketUpgrade},  State};
+        use axum::response::Response;
+        use lokai::models;
+        use leptos::logging;
+        use lokai::state::AppState;
+        use lokai::server::ollama::{OllamaChatResponseStream,OllamaChatParams, default_model};
+        use lokai::server::db;
+        use futures_util::StreamExt;
+
+        pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<AppState>) -> Response {
+            ws.on_upgrade(|socket| handle_socket(socket, app_state))
+        }
+
+        async fn handle_socket(mut socket: WebSocket, app_state: AppState) {
+            let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(100);
+
+            while let Some(msg) = socket.recv().await {
+                let tx = tx.clone();
+                let app_state = app_state.clone();
+                logging::log!("socket.recv(): {:?}", msg);
+                if let Ok(AxumWSMessage::Text(payload)) = msg {
+                    logging::log!("AxumWSMessage::Text: {:?}", payload);
+                    let user_prompt = serde_json::from_str::<models::Message>(&payload).unwrap();
+                    tokio::spawn(async move {
+
+                        let assistant_message = models::Message::assistant("".to_string(), user_prompt.conversation_id);
+                        let _ = db::create_message(app_state.db_pool.clone(), assistant_message.clone());
+
+                        inference(user_prompt, assistant_message.id, tx, app_state).await
+                    });
+                } else {
+                    // client disconnected
+                    return;
+                };
+
+                while let Some(msg) = rx.recv().await {
+                    let msg = AxumWSMessage::Text(msg);
+                    if socket.send(msg).await.is_err() {
+                        // client disconnected
+                        return ;
+                    }
+                }
+            };
+        }
+
+        async fn inference(user_prompt: models::Message, assistant_message_id: Uuid, tx: tokio::sync::mpsc::Sender<String>, app_state: AppState) {
+            logging::log!("Got user prompt for inference: {:?}", user_prompt);
+
+            let client = app_state.reqwest_client;
+            let conversation_id = user_prompt.conversation_id;
+
+            let mut conversation = db::get_conversation_messages(app_state.db_pool.clone(), conversation_id).await.unwrap();
+            conversation.push(user_prompt.clone());
+
+            tokio::spawn(async move {
+                if db::create_message(app_state.db_pool, user_prompt).await.is_err() {
+                    logging::log!("error while saving user message");
+                }
+            });
+
+            let params = OllamaChatParams {
+                model: default_model(),
+                messages: conversation.into_iter().map(|m| m.into()).collect(),
+                stream: true,
+            };
+
+            let mut stream = client
+                .post("http://host.docker.internal:11434/api/chat")
+                .json(&params)
+                .send()
+                .await
+                .unwrap()
+                .bytes_stream().map(|chunk| chunk.unwrap()).map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
+
+                while let Some(chunk) = stream.next().await {
+                    if let Ok(chunk) = chunk {
+                        let assistant_response = models::Message {
+                                id: assistant_message_id,
+                                role: models::Role::Assistant.to_string(),
+                                content: chunk.message.content,
+                                conversation_id
+                        };
+                        let assistant_response = serde_json::to_string(&assistant_response).unwrap();
+
+                        if tx.send(assistant_response.to_string()).await.is_err() {
+                            break;
+                        };
+
+                        if chunk.done {
+                            break;
+                        }
+                    }
+                }
+        }
+    }
 }

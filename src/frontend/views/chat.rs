@@ -10,6 +10,12 @@ use crate::server::api::{get_conversation_messages, AskAssistant};
 
 #[component]
 pub(crate) fn Chat() -> impl IntoView {
+    // SAFETY: it's safe to unwrap because I provide context in App
+    let AppContext {
+        conversations: _,
+        model,
+    } = use_context().unwrap();
+
     let params = use_params_map();
     let conversation_id = move || {
         params
@@ -21,12 +27,6 @@ pub(crate) fn Chat() -> impl IntoView {
 
     let user_prompt = create_rw_signal(String::new());
     let messages = create_rw_signal(Vec::<models::Message>::new());
-
-    // SAFETY: it's safe to unwrap because I provide context in App
-    let AppContext {
-        conversations: _,
-        model,
-    } = use_context().unwrap();
 
     let db_messages = create_resource(
         move || conversation_id(),
@@ -95,6 +95,7 @@ pub(crate) fn Chat() -> impl IntoView {
                                 </Transition>
                                 // TODO: use For and properly update only necessary elements
                                 <Messages messages=messages.into()/>
+
                                 <div class="w-full h-32 flex-shrink-0"></div>
                                 <div node_ref=bottom_of_chat_div></div>
                             </div>

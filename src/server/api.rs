@@ -101,6 +101,7 @@ pub async fn get_conversation_messages(
             .map_err(|err| ServerFnError::new(err))?
             .ok_or(ServerFnError::new("Conversation doesn't exist".to_string()))?
     };
+
     let messages = db::get_conversation_messages(db_pool, conversation.id)
         .await
         .unwrap();

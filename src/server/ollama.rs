@@ -33,6 +33,12 @@ pub struct OllamaChatResponse {
     pub message: OllamaMessage,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct OllamaChatResponseStream {
+    pub message: OllamaMessage,
+    pub done: bool,
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OllamaChatParams {
     #[serde(default = "default_model")]

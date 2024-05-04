@@ -8,7 +8,11 @@ crate-type = ["cdylib", "rlib"]
 
 # TODO: use native tls crate
 [dependencies]
-axum = { version = "0.7", features = ["macros"], optional = true }
+axum = { version = "0.7", features = [
+    "macros",
+    "tokio",
+    "ws",
+], optional = true }
 console_error_panic_hook = "0.1"
 leptos = { version = "0.6", features = ["nightly"] }
 leptos_axum = { version = "0.6", optional = true }
@@ -25,6 +29,7 @@ serde = { version = "1", features = ["derive"] }
 cfg-if = "1"
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
+    "stream",
 ], optional = true }
 sqlx = { version = "0.7.4", default-features = false, features = [
     "runtime-tokio",
@@ -35,6 +40,9 @@ sqlx = { version = "0.7.4", default-features = false, features = [
 uuid = { version = "1.8", features = ["v4", "serde"] }
 leptos_icons = "0.3"
 icondata = "0.3"
+leptos-use = "*"
+futures-util = { version = "0.3", optional = true }
+serde_json = "1"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
@@ -50,6 +58,7 @@ ssr = [
     "dep:tracing",
     "dep:reqwest",
     "dep:sqlx",
+    "dep:futures-util",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

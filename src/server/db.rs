@@ -2,7 +2,10 @@ use leptos::logging;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-use crate::models::{Conversation, Message};
+use crate::{
+    models::{Conversation, Message},
+    server::db,
+};
 
 pub async fn get_conversation_messages(
     db_pool: SqlitePool,
@@ -106,4 +109,20 @@ VALUES ( ?1, ?2 )
     logging::log!("new conversation saved: {:?}", conversation.id);
 
     Ok(id)
+}
+
+// TODO: this doesn't work
+pub async fn create_conversation_if_not_exists(db_pool: SqlitePool, conversation: Conversation) {
+    match db::get_conversation(db_pool.clone(), conversation.id)
+        .await
+        .unwrap()
+    {
+        Some(record) => {
+            logging::log!("conversation already exist: {:?}", record.id);
+        }
+        None => {
+            logging::log!("conversation doesn't exist: {:?}", conversation.id);
+            let _ = db::create_conversation(db_pool, conversation).await;
+        }
+    };
 }

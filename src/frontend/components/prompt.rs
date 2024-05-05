@@ -4,8 +4,6 @@ use leptos::html::Textarea;
 use leptos::*;
 use leptos_icons::Icon;
 
-use crate::models;
-
 #[component]
 fn PromptSubmitButton<FCl>(on_click: FCl, button_disabled: ReadSignal<bool>) -> impl IntoView
 where
@@ -70,21 +68,20 @@ where
 }
 
 #[component]
-pub(crate) fn Prompt<FCl, FKdn, I>(
+pub(crate) fn Prompt<FCl, FKdn>(
     user_prompt: RwSignal<String>,
     on_click: FCl,
     on_keydown: FKdn,
-    send_user_prompt: Action<I, Result<models::Message, ServerFnError>>,
+    server_response_pending: ReadSignal<bool>,
 ) -> impl IntoView
 where
     FCl: Fn(MouseEvent) + 'static,
     FKdn: Fn(KeyboardEvent) + 'static,
-    I: 'static,
 {
     let (button_disabled, set_button_disabled) = create_signal(true);
 
     create_effect(move |_| {
-        if user_prompt().len() == 0 || send_user_prompt.pending().get() {
+        if user_prompt().len() == 0 || server_response_pending.get() {
             set_button_disabled(true)
         } else {
             set_button_disabled(false)

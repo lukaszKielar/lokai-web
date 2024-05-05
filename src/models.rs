@@ -59,21 +59,25 @@ pub struct Message {
 }
 
 impl Message {
-    fn new(role: Role, content: String, conversation_id: Uuid) -> Self {
+    fn new(id: Uuid, role: Role, content: String, conversation_id: Uuid) -> Self {
         Self {
-            id: Uuid::new_v4(),
+            id,
             role: role.to_string(),
             content,
             conversation_id,
         }
     }
 
-    pub fn user(content: String, conversation_id: Uuid) -> Self {
-        Self::new(Role::User, content, conversation_id)
+    pub fn user(id: Uuid, content: String, conversation_id: Uuid) -> Self {
+        Self::new(id, Role::User, content, conversation_id)
     }
 
-    pub fn assistant(content: String, conversation_id: Uuid) -> Self {
-        Self::new(Role::Assistant, content, conversation_id)
+    pub fn assistant(id: Uuid, content: String, conversation_id: Uuid) -> Self {
+        Self::new(id, Role::Assistant, content, conversation_id)
+    }
+
+    pub fn update_content(&mut self, update: &str) {
+        self.content.push_str(update);
     }
 }
 
@@ -85,10 +89,7 @@ pub struct Conversation {
 }
 
 impl Conversation {
-    pub fn new(name: String) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            name,
-        }
+    pub fn new(id: Uuid, name: String) -> Self {
+        Self { id, name }
     }
 }

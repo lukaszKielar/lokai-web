@@ -71,8 +71,11 @@ pub async fn ask_assistant(
         .await
         .unwrap();
 
-    let assistant_message =
-        Message::assistant(response.message.content.trim().to_string(), conversation_id);
+    let assistant_message = Message::assistant(
+        Uuid::new_v4(),
+        response.message.content.trim().to_string(),
+        conversation_id,
+    );
 
     {
         let assistant_message = assistant_message.clone();

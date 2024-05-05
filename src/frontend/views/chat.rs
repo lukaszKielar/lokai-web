@@ -1,12 +1,14 @@
 use leptos::ev::{KeyboardEvent, MouseEvent};
-use leptos::{html::Div, *};
+use leptos::html::*;
+use leptos::*;
 use leptos_router::use_params_map;
+use leptos_use::{use_websocket, UseWebsocketReturn};
 use uuid::Uuid;
 
 use crate::app::AppContext;
 use crate::frontend::components::{Messages, Prompt};
 use crate::models;
-use crate::server::api::{get_conversation_messages, AskAssistant};
+use crate::server::api::get_conversation_messages;
 
 #[component]
 pub(crate) fn Chat() -> impl IntoView {
@@ -15,6 +17,14 @@ pub(crate) fn Chat() -> impl IntoView {
         conversations: _,
         model,
     } = use_context().unwrap();
+
+    let UseWebsocketReturn {
+        message: assistant_message,
+        send,
+        ..
+    } = use_websocket("ws://localhost:3000/ws");
+    // FIXME: it's ugly, but cannot use common `dispatch` without a clone
+    let send_clone = send.clone();
 
     let params = use_params_map();
     let conversation_id = move || {
@@ -25,6 +35,7 @@ pub(crate) fn Chat() -> impl IntoView {
             .unwrap()
     };
 
+    let server_response_pending = create_rw_signal(false);
     let user_prompt = create_rw_signal(String::new());
     let messages = create_rw_signal(Vec::<models::Message>::new());
 
@@ -43,37 +54,73 @@ pub(crate) fn Chat() -> impl IntoView {
         }
     });
 
-    let send_user_prompt = create_server_action::<AskAssistant>();
-
-    let dispatch = move || {
-        let user_message = models::Message::user(user_prompt.get(), conversation_id());
-        let user_message_clone = user_message.clone();
+    let dispatch = move |send: &dyn Fn(&str)| {
+        let user_message =
+            models::Message::user(Uuid::new_v4(), user_prompt.get(), conversation_id());
         if user_message.content != "" {
-            messages.update(|msgs| msgs.push(user_message_clone));
-            send_user_prompt.dispatch(AskAssistant {
-                user_message,
-                new_conversation: false,
-            });
+            server_response_pending.set(true);
+            send(&serde_json::to_string(&user_message).unwrap());
+            messages.update(|msgs| msgs.push(user_message.clone()));
             user_prompt.set("".to_string());
         }
     };
 
     let on_click = move |ev: MouseEvent| {
         ev.prevent_default();
-        dispatch();
+        dispatch(&send);
     };
     let on_keydown = move |ev: KeyboardEvent| {
         if ev.key() == "Enter" && !ev.shift_key() {
             ev.prevent_default();
-            dispatch();
+            dispatch(&send_clone);
         }
     };
 
     create_effect(move |_| {
-        if let Some(response) = send_user_prompt.value().get() {
-            // TODO: handle errors
-            let assistant_response = response.unwrap();
-            messages.update(|msgs| msgs.push(assistant_response));
+        if let Some(msg) = assistant_message.get() {
+            let assistant_message: models::Message = serde_json::from_str(&msg).unwrap();
+
+            if assistant_message.content == "" {
+                server_response_pending.set(false);
+            }
+
+            if let Some(last_msg) = messages.get().last() {
+                match models::Role::from(last_msg.role.clone()) {
+                    models::Role::System => panic!("cannot happen"),
+                    models::Role::User => {
+                        logging::log!("adding assistant to the list: {:?}", assistant_message);
+                        messages.update(|msgs| msgs.push(assistant_message));
+                    }
+                    models::Role::Assistant => {
+                        if let Some(message_to_update_position) = messages
+                            .get()
+                            .iter()
+                            .position(|m| m.id == assistant_message.id)
+                        {
+                            logging::log!(
+                                "adding assistant to the existing message at [{:?}]: {:?}",
+                                message_to_update_position,
+                                assistant_message
+                            );
+                            // SAFETY: it's safe to unwrap, because I've just got the index
+                            let current_message = messages
+                                .get()
+                                .get(message_to_update_position)
+                                .unwrap()
+                                .to_owned();
+                            let mut updated_message = current_message.clone();
+                            updated_message.content.push_str(&assistant_message.content);
+
+                            messages.update(|msgs| {
+                                let _ = std::mem::replace(
+                                    &mut msgs[message_to_update_position],
+                                    updated_message,
+                                );
+                            })
+                        }
+                    }
+                }
+            }
         };
     });
 
@@ -88,6 +135,7 @@ pub(crate) fn Chat() -> impl IntoView {
                                     "Model: " <b>{model}</b>
                                 </div>
                                 <Transition>
+                                    // TODO: reload only when necessary
                                     {if let Some(msgs) = db_messages.get() {
                                         messages.set(msgs);
                                     }}
@@ -107,7 +155,7 @@ pub(crate) fn Chat() -> impl IntoView {
                     user_prompt=user_prompt
                     on_click=on_click
                     on_keydown=on_keydown
-                    send_user_prompt=send_user_prompt
+                    server_response_pending=server_response_pending.read_only()
                 />
             </div>
         </div>

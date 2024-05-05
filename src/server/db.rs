@@ -1,5 +1,5 @@
-use leptos::logging;
 use sqlx::SqlitePool;
+use tracing::{debug, warn};
 use uuid::Uuid;
 
 use crate::{
@@ -29,7 +29,7 @@ WHERE conversation_id = ?
 
 // TODO: user proper error handling
 pub async fn create_message(db_pool: SqlitePool, message: Message) -> Result<i64, String> {
-    logging::log!("saving message to db: {:?}", message.id);
+    debug!(message_id = message.id.to_string(), "saving message to db");
 
     let id = sqlx::query!(
         r#"
@@ -46,7 +46,7 @@ VALUES ( ?1, ?2, ?3, ?4 )
     .unwrap()
     .last_insert_rowid();
 
-    logging::log!("new message saved: {:?}", message.id);
+    debug!(message_id = message.id.to_string(), "message saved to db");
 
     Ok(id)
 }
@@ -91,7 +91,10 @@ pub async fn create_conversation(
     db_pool: SqlitePool,
     conversation: Conversation,
 ) -> Result<i64, String> {
-    logging::log!("saving conversation to db: {:?}", conversation.id);
+    debug!(
+        conversation_id = conversation.id.to_string(),
+        "saving conversation to db"
+    );
 
     let id = sqlx::query!(
         r#"
@@ -106,7 +109,10 @@ VALUES ( ?1, ?2 )
     .unwrap()
     .last_insert_rowid();
 
-    logging::log!("new conversation saved: {:?}", conversation.id);
+    debug!(
+        conversation_id = conversation.id.to_string(),
+        "conversation saved to db"
+    );
 
     Ok(id)
 }
@@ -117,11 +123,17 @@ pub async fn create_conversation_if_not_exists(db_pool: SqlitePool, conversation
         .await
         .unwrap()
     {
-        Some(record) => {
-            logging::log!("conversation already exist: {:?}", record.id);
+        Some(conversation) => {
+            warn!(
+                conversation_id = conversation.id.to_string(),
+                "conversation already exist in db"
+            );
         }
         None => {
-            logging::log!("conversation doesn't exist: {:?}", conversation.id);
+            debug!(
+                conversation_id = conversation.id.to_string(),
+                "conversation doesn't exist in db"
+            );
             let _ = db::create_conversation(db_pool, conversation).await;
         }
     };

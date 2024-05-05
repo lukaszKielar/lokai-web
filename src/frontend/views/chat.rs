@@ -24,7 +24,7 @@ pub(crate) fn Chat() -> impl IntoView {
         send,
         ..
     } = use_websocket("ws://localhost:3000/ws");
-    // FIXME: it's ugly, but cannot use common `dispatch` without a clone
+    // it's ugly, but send doesn't implment Copy
     let send_clone = send.clone();
 
     let params = use_params_map();

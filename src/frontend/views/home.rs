@@ -23,7 +23,7 @@ pub(crate) fn Home() -> impl IntoView {
         send,
         ..
     } = use_websocket("ws://localhost:3000/ws");
-    // FIXME: it's ugly, but send doesn't implment Copy
+    // it's ugly, but send doesn't implment Copy
     let send_clone = send.clone();
 
     let navigate = use_navigate();

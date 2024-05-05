@@ -18,6 +18,7 @@ pub(crate) fn Home() -> impl IntoView {
     } = use_context().unwrap();
 
     let UseWebsocketReturn {
+        ready_state,
         message: assistant_message,
         send,
         ..
@@ -46,10 +47,11 @@ pub(crate) fn Home() -> impl IntoView {
     let dispatch = move |send: &dyn Fn(&str)| {
         let user_message =
             models::Message::user(Uuid::new_v4(), user_prompt.get(), conversation_id());
-        if user_message.content != "" {
+        if user_message.content != "" && !server_response_pending.get() {
+            messages.update(|msgs| msgs.push(user_message.clone()));
             server_response_pending.set(true);
             send(&serde_json::to_string(&user_message).unwrap());
-            messages.update(|msgs| msgs.push(user_message.clone()));
+            logging::log!("prompt send to the server: {:?}", user_message.content);
 
             // TODO: I should prob get this object from server response
             let conversation = models::Conversation {
@@ -88,7 +90,6 @@ pub(crate) fn Home() -> impl IntoView {
                 match models::Role::from(last_msg.role.clone()) {
                     models::Role::System => panic!("cannot happen"),
                     models::Role::User => {
-                        logging::log!("adding assistant to the list: {:?}", assistant_message);
                         messages.update(|msgs| msgs.push(assistant_message));
                     }
                     models::Role::Assistant => {
@@ -97,11 +98,6 @@ pub(crate) fn Home() -> impl IntoView {
                             .iter()
                             .position(|m| m.id == assistant_message.id)
                         {
-                            logging::log!(
-                                "adding assistant to the existing message at [{:?}]: {:?}",
-                                message_to_update_position,
-                                assistant_message
-                            );
                             // SAFETY: it's safe to unwrap, because I've just got the index
                             let current_message = messages
                                 .get()
@@ -133,7 +129,8 @@ pub(crate) fn Home() -> impl IntoView {
                             <div class="flex flex-col items-center text-sm bg-gray-800">
 
                                 <div class="flex w-full items-center justify-center gap-1 border-b border-black/10 bg-gray-50 p-3 text-gray-500 dark:border-gray-900/50 dark:bg-gray-700 dark:text-gray-300">
-                                    "Model: " <b>{model}</b>
+                                    "Model: " <b>{model}</b> ", Server: "
+                                    {move || ready_state.get().to_string()}
                                 </div>
                                 <Messages messages=messages.into()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>

@@ -46,7 +46,7 @@ async fn main() {
         let db_pool = db_pool.clone();
         let conversation = lokai::models::Conversation::new(
             Uuid::new_v4(),
-            String::from("conversation 2 strasznie dluga nazwa"),
+            String::from("conversation 2 very loooooooooooong name"),
         );
         let _ = db::create_conversation(db_pool, conversation)
             .await
@@ -109,41 +109,77 @@ cfg_if::cfg_if! {
         use lokai::server::ollama::{OllamaChatResponseStream,OllamaChatParams, default_model};
         use lokai::server::db;
         use futures_util::StreamExt;
+        use futures_util::SinkExt as _;
 
         pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<AppState>) -> Response {
+            logging::log!("ws: {:?}", ws);
             ws.on_upgrade(|socket| handle_socket(socket, app_state))
         }
 
-        async fn handle_socket(mut socket: WebSocket, app_state: AppState) {
-            let (tx, mut rx) = tokio::sync::mpsc::channel::<String>(100);
+        async fn handle_socket(socket: WebSocket, app_state: AppState) {
+            logging::log!("socket: {:?}", socket);
+            let (inference_request_tx, mut inference_request_rx) = tokio::sync::mpsc::channel::<models::Message>(100);
+            let (inference_response_tx, mut inference_response_rx) = tokio::sync::mpsc::channel::<models::Message>(100);
 
-            while let Some(msg) = socket.recv().await {
-                let tx = tx.clone();
-                let app_state = app_state.clone();
-                logging::log!("socket.recv(): {:?}", msg);
-                if let Ok(WebSocketMessage::Text(payload)) = msg {
-                    logging::log!("axum::extract::ws::Message::Text: {:?}", payload);
-                    let user_prompt = serde_json::from_str::<models::Message>(&payload).unwrap();
-                    tokio::spawn(async move {
-                        inference(user_prompt, tx, app_state).await
-                    });
-                } else {
-                    // client disconnected
-                    return;
+            // inference thread
+            let inference_thread = tokio::spawn(async move {
+                logging::log!("inference thread started");
+                while let Some(user_prompt) = inference_request_rx.recv().await {
+                    let inference_response_tx_clone = inference_response_tx.clone();
+                    let app_state_clone = app_state.clone();
+                    inference(user_prompt, inference_response_tx_clone, app_state_clone).await;
                 };
+                logging::log!("inference thread exited");
+            });
 
-                while let Some(msg) = rx.recv().await {
-                    if socket.send(WebSocketMessage::Text(msg)).await.is_err() {
+            let (mut sender, mut receiver) = socket.split();
+
+            // receiver thread
+            let _ = tokio::spawn(async move {
+                while let Some(assistant_response_chunk) = inference_response_rx.recv().await {
+                    logging::log!("got assistant response chunk: {:?}", assistant_response_chunk);
+                    let assistant_response_chunk_json = serde_json::to_string(&assistant_response_chunk).unwrap();
+                    if sender.send(WebSocketMessage::Text(assistant_response_chunk_json)).await.is_err() {
                         // client disconnected
                         return ;
                     }
+                };
+            });
+
+            // sender thread
+            let _ = tokio::spawn(async move {
+                while let Some(Ok(WebSocketMessage::Text(user_prompt))) = receiver.next().await {
+                    logging::log!("message received through the socket: {:?}", user_prompt);
+                    let user_prompt = serde_json::from_str::<models::Message>(&user_prompt).unwrap();
+                    let _ = inference_request_tx.send(user_prompt).await;
                 }
-            };
+            });
+
+            // https://github.com/tokio-rs/axum/blob/main/examples/websockets/src/main.rs
+            // tokio::select! {
+            //     rv_a = (&mut assistant_response) => {
+            //         match rv_a {
+            //             Ok(_) => println!("rv_a arm Ok"),
+            //             Err(_) => println!("rv_a arm Err"),
+            //         }
+            //         user_prompt_request.abort();
+            //     },
+            //     rv_b = (&mut user_prompt_request) => {
+            //         match rv_b {
+            //             Ok(_) => println!("rv_a arm Ok"),
+            //             Err(_) => println!("rv_a arm Err"),
+            //         }
+            //         assistant_response.abort();
+            //     },
+            // }
+
+            let _ = inference_thread.await;
+            logging::log!("I exited!")
         }
 
         // TODO: use transactions
-        async fn inference(user_prompt: models::Message, tx: tokio::sync::mpsc::Sender<String>, app_state: AppState) {
-            logging::log!("Got user prompt for inference: {:?}", user_prompt);
+        async fn inference(user_prompt: models::Message, inference_response_tx: tokio::sync::mpsc::Sender<models::Message>, app_state: AppState) {
+            logging::log!("got user prompt for inference: {:?}", user_prompt);
             let client = app_state.reqwest_client;
 
             let conversation = models::Conversation::new(user_prompt.conversation_id, user_prompt.content.clone());
@@ -175,25 +211,25 @@ cfg_if::cfg_if! {
                 .unwrap()
                 .bytes_stream().map(|chunk| chunk.unwrap()).map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
 
-                let mut assistant_response = models::Message::assistant(Uuid::new_v4(), "".to_string(), conversation_id);
+            let mut assistant_response = models::Message::assistant(Uuid::new_v4(), "".to_string(), conversation_id);
 
-                while let Some(chunk) = stream.next().await {
-                    if let Ok(chunk) = chunk {
-                        assistant_response.update_content(&chunk.message.content);
+            while let Some(chunk) = stream.next().await {
+                if let Ok(chunk) = chunk {
+                    assistant_response.update_content(&chunk.message.content);
 
-                        let assistant_response_chunk = models::Message::assistant(assistant_response.id, chunk.message.content, conversation_id);
-                        let assistant_response_json = serde_json::to_string(&assistant_response_chunk).unwrap();
-                        if tx.send(assistant_response_json.to_string()).await.is_err() {
-                            break;
-                        };
+                    let assistant_response_chunk = models::Message::assistant(assistant_response.id, chunk.message.content, conversation_id);
+                    if inference_response_tx.send(assistant_response_chunk).await.is_err() {
+                        break;
+                    };
 
-                        if chunk.done {
-                            break;
-                        }
+                    if chunk.done {
+                        break;
                     }
                 }
+            }
 
-                let _ = db::create_message(app_state.db_pool, assistant_response).await;
+            let _ = db::create_message(app_state.db_pool, assistant_response).await;
+            logging::log!("inference done");
         }
     }
 }

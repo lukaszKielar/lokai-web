@@ -43,6 +43,10 @@ icondata = "0.3"
 leptos-use = "*"
 futures-util = { version = "0.3", optional = true }
 serde_json = "1"
+tracing-subscriber = { version = "0.3", optional = true, features = [
+    "std",
+    "env-filter",
+] }
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
@@ -59,6 +63,7 @@ ssr = [
     "dep:reqwest",
     "dep:sqlx",
     "dep:futures-util",
+    "dep:tracing-subscriber",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

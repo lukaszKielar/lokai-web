@@ -7,7 +7,7 @@ use crate::models::{Message as MessageModel, Role};
 pub(crate) fn Message(message: MaybeSignal<MessageModel>) -> impl IntoView {
     let message = message.get();
     let message_role = message.role;
-    let message_content = message.content;
+    let message_content = view! { <p>{message.content}</p> }.into_view();
 
     let is_user = match Role::from(message_role) {
         Role::Assistant | Role::System => false,
@@ -30,15 +30,6 @@ pub(crate) fn Message(message: MaybeSignal<MessageModel>) -> impl IntoView {
         }
     };
 
-    let message_content_class = {
-        if !is_user && message_content == "" {
-            view! { <Icon icon=icondata::LuTextCursorInput class="h-6 w-6 animate-pulse"/> }
-                .into_view()
-        } else {
-            view! { <p>{message_content}</p> }.into_view()
-        }
-    };
-
     view! {
         <div class=message_class>
             <div class="text-base gap-4 md:gap-6 md:max-w-2xl lg:max-w-xl xl:max-w-3xl flex lg:px-0 m-auto w-full">
@@ -57,7 +48,7 @@ pub(crate) fn Message(message: MaybeSignal<MessageModel>) -> impl IntoView {
                         <div class="flex flex-grow flex-col gap-3">
                             <div class="min-h-10 flex flex-col items-start gap-4 whitespace-pre-wrap break-words">
                                 <div class="markdown prose w-full break-words dark:prose-invert dark">
-                                    {message_content_class}
+                                    {message_content}
                                 </div>
                             </div>
                         </div>

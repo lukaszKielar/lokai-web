@@ -17,6 +17,7 @@ fn Conversation(conversation: MaybeSignal<models::Conversation>) -> impl IntoVie
             >
                 <Icon icon=icondata::LuMessageSquare class="h-4 w-4"/>
                 <div class="flex-1 text-ellipsis align-middle h-6 overflow-hidden break-all relative">
+                    // FIXME: properly implement text-ellipsis for name of the conversation
                     {conversation.name}
                 </div>
             </A>
@@ -60,16 +61,9 @@ fn Conversations() -> impl IntoView {
             {if let Some(convs) = db_conversations.get() {
                 conversations.set(convs);
             }}
-            {move || {
-                conversations
-                    .get()
-                    .into_iter()
-                    .map(|c| {
-                        view! { <Conversation conversation=c.into()/> }
-                    })
-                    .collect_view()
-            }}
-
+            <For each=conversations key=|c| (c.id, c.name.clone()) let:conversation>
+                <Conversation conversation=conversation.into()/>
+            </For>
         </Transition>
     }
 }

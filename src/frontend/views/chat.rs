@@ -141,9 +141,7 @@ pub(crate) fn Chat() -> impl IntoView {
                                     }}
 
                                 </Transition>
-                                // TODO: use For and properly update only necessary elements
-                                <Messages messages=messages.into()/>
-
+                                <Messages messages=messages.read_only()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>
                                 <div node_ref=bottom_of_chat_div></div>
                             </div>

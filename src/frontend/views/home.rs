@@ -132,7 +132,7 @@ pub(crate) fn Home() -> impl IntoView {
                                     "Model: " <b>{model}</b> ", Server: "
                                     {move || ready_state.get().to_string()}
                                 </div>
-                                <Messages messages=messages.into()/>
+                                <Messages messages=messages.read_only()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>
                                 <div node_ref=bottom_of_chat_div></div>
                             </div>

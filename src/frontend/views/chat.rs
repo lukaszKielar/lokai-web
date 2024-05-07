@@ -32,6 +32,8 @@ pub(crate) fn Chat() -> impl IntoView {
         params
             .get()
             .get("id")
+            // FIXME: unwrap here can break entire website
+            // I should probably navigate to 404
             .map(|p| p.parse::<Uuid>().unwrap())
             .unwrap()
     };

@@ -1,6 +1,9 @@
 #[cfg(feature = "ssr")]
+use lokai::server::error::Result;
+
+#[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     use std::env;
     use std::str::FromStr;
 
@@ -13,6 +16,7 @@ async fn main() {
     use lokai::fileserv::file_and_error_handler;
     use lokai::handlers::{leptos_routes_handler, server_fn_handler};
     use lokai::server::db;
+    use lokai::server::error::Result;
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
     use sqlx::SqlitePool;
@@ -46,8 +50,7 @@ async fn main() {
         .bind(conversation_id)
         .bind("conversation")
         .execute(&db_pool)
-        .await
-        .unwrap();
+        .await?;
     }
     {
         let db_pool = db_pool.clone();
@@ -55,9 +58,7 @@ async fn main() {
             Uuid::new_v4(),
             String::from("conversation 2 very loooooooooooong name"),
         );
-        let _ = db::create_conversation(db_pool, conversation)
-            .await
-            .unwrap();
+        let _ = db::create_conversation(db_pool, conversation).await?;
     }
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
@@ -100,6 +101,8 @@ async fn main() {
     axum::serve(listener, app.into_make_service())
         .await
         .expect("Cannot start server");
+
+    Ok(())
 }
 
 #[cfg(not(feature = "ssr"))]
@@ -115,12 +118,13 @@ cfg_if::cfg_if! {
         use axum::response::Response;
         use lokai::models;
         use uuid::Uuid;
-        use tracing::{debug, info};
+        use tracing::{debug, info, error};
         use lokai::state::AppState;
         use lokai::server::ollama::{OllamaChatResponseStream,OllamaChatParams, default_model};
         use lokai::server::db;
         use futures_util::StreamExt;
         use futures_util::SinkExt as _;
+        use tokio::sync::mpsc;
 
         pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<AppState>) -> Response {
             ws.on_upgrade(|socket| handle_socket(socket, app_state))
@@ -129,43 +133,70 @@ cfg_if::cfg_if! {
         async fn handle_socket(socket: WebSocket, app_state: AppState) {
             debug!("start handling a socket");
 
-            let (inference_request_tx, mut inference_request_rx) = tokio::sync::mpsc::channel::<models::Message>(100);
-            let (inference_response_tx, mut inference_response_rx) = tokio::sync::mpsc::channel::<models::Message>(100);
+            let (inference_request_tx, mut inference_request_rx) = mpsc::channel::<models::Message>(100);
+            let (inference_response_tx, mut inference_response_rx) = mpsc::channel::<models::Message>(100);
+            let (mut sender, mut receiver) = socket.split();
 
-            // inference thread
             let inference_thread = tokio::spawn(async move {
                 info!("inference thread started");
                 while let Some(user_prompt) = inference_request_rx.recv().await {
                     let inference_response_tx_clone = inference_response_tx.clone();
                     let app_state_clone = app_state.clone();
-                    inference(user_prompt, inference_response_tx_clone, app_state_clone).await;
+                    match inference(user_prompt, inference_response_tx_clone, app_state_clone).await {
+                        Ok(_) => {},
+                        // consider sending a message through the channel to indicate failure
+                        Err(err) => {
+                            error!(?err, "error while processing inference request, exiting...");
+                            break;
+                        },
+                    };
                 };
                 info!("inference thread exited");
             });
 
-            let (mut sender, mut receiver) = socket.split();
-
-            // receiver thread
-            let _ = tokio::spawn(async move {
+            let sender_thread = tokio::spawn(async move {
+                info!("ws sender thread started");
                 while let Some(assistant_response_chunk) = inference_response_rx.recv().await {
                     debug!(?assistant_response_chunk, "got assistant response chunk");
-                    let assistant_response_chunk_json = serde_json::to_string(&assistant_response_chunk).unwrap();
+                    let assistant_response_chunk_json = match serde_json::to_string(&assistant_response_chunk) {
+                        Ok(value) => value,
+                        Err(err) => {
+                            error!(?err, "cannot serialise assistant response, exiting...");
+                            break;
+                        },
+                    };
                     if sender.send(WebSocketMessage::Text(assistant_response_chunk_json)).await.is_err() {
                         // client disconnected
                         return ;
                     }
                 };
+                info!("ws sender thread exited");
             });
 
-            // sender thread
-            let _ = tokio::spawn(async move {
+            let receiver_thread = tokio::spawn(async move {
+                info!("ws receiver thread started");
                 while let Some(Ok(WebSocketMessage::Text(user_prompt))) = receiver.next().await {
                     debug!(?user_prompt, "user prompt received through websocket");
-                    let user_prompt = serde_json::from_str::<models::Message>(&user_prompt).unwrap();
-                    let _ = inference_request_tx.send(user_prompt).await;
+                    let user_prompt = match serde_json::from_str::<models::Message>(&user_prompt) {
+                        Ok(value) => value,
+                        Err(err) => {
+                            error!(?err, "cannot deserialise user prompt, exiting...");
+                            break;
+                        },
+                    };
+                    match inference_request_tx.send(user_prompt).await {
+                        Ok(_) => {},
+                        Err(err) => {
+                            error!(?err, "cannot send inference request, exiting...");
+                            break;
+                        },
+                    };
                 }
+                info!("ws receiver thread exited");
             });
 
+            // TODO: consider scenarions when some of the threads fail
+            // handle this kind of situation
             // https://github.com/tokio-rs/axum/blob/main/examples/websockets/src/main.rs
             // tokio::select! {
             //     rv_a = (&mut assistant_response) => {
@@ -184,12 +215,14 @@ cfg_if::cfg_if! {
             //     },
             // }
 
+            // TODO: consider scenarions when some of the threads fail
+            // handle this kind of situation, use snippet above
             let _ = inference_thread.await;
             debug!("finished handling a socket");
         }
 
         // TODO: use transactions
-        async fn inference(user_prompt: models::Message, inference_response_tx: tokio::sync::mpsc::Sender<models::Message>, app_state: AppState) {
+        async fn inference(user_prompt: models::Message, inference_response_tx: mpsc::Sender<models::Message>, app_state: AppState) -> Result<()> {
             debug!(conversation_id=user_prompt.conversation_id.to_string(), "start inference");
             let client = app_state.reqwest_client;
 
@@ -198,14 +231,12 @@ cfg_if::cfg_if! {
             // TODO: create background thread that creates summary of the question,
             // and use it when saving conversation to the DB
             db::create_conversation_if_not_exists(app_state.db_pool.clone(), conversation).await;
-            let mut messages = db::get_conversation_messages(app_state.db_pool.clone(), conversation_id).await.unwrap();
+            let mut messages = db::get_conversation_messages(app_state.db_pool.clone(), conversation_id).await?;
             messages.push(user_prompt.clone());
 
             {
                 let db_pool = app_state.db_pool.clone();
-                tokio::spawn(async move {
-                    let _ = db::create_message(db_pool, user_prompt).await;
-                });
+                let _ = db::create_message(db_pool, user_prompt).await?;
             }
 
             let params = OllamaChatParams {
@@ -218,8 +249,7 @@ cfg_if::cfg_if! {
                 .post("http://host.docker.internal:11434/api/chat")
                 .json(&params)
                 .send()
-                .await
-                .unwrap()
+                .await?
                 .bytes_stream().map(|chunk| chunk.unwrap()).map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
 
             let mut assistant_response = models::Message::assistant(Uuid::new_v4(), "".to_string(), conversation_id);
@@ -241,6 +271,8 @@ cfg_if::cfg_if! {
 
             let _ = db::create_message(app_state.db_pool, assistant_response).await;
             debug!(conversation_id=conversation_id.to_string(), "inference done");
+
+            Ok(())
         }
     }
 }

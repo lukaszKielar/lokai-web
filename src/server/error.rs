@@ -5,6 +5,8 @@ use leptos::ServerFnError;
 pub enum Error {
     #[from]
     DatabaseError(sqlx::Error),
+    #[from]
+    ReqwestError(reqwest::Error),
 }
 
 impl Into<ServerFnError> for Error {

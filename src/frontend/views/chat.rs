@@ -42,7 +42,6 @@ pub(crate) fn Chat() -> impl IntoView {
     let user_prompt = create_rw_signal(String::new());
     let messages = create_rw_signal(Vec::<models::Message>::new());
 
-    // TODO: use ErrorBoundary for the Result
     let db_messages = create_resource(
         move || conversation_id(),
         move |id| async move { get_conversation_messages(id).await },

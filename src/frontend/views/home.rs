@@ -51,8 +51,6 @@ pub(crate) fn Home() -> impl IntoView {
             messages.update(|msgs| msgs.push(user_message.clone()));
             server_response_pending.set(true);
             send(&serde_json::to_string(&user_message).unwrap());
-            logging::log!("prompt send to the server: {:?}", user_message.content);
-
             // TODO: I should prob get this object from server response
             let conversation = models::Conversation {
                 id: conversation_id(),

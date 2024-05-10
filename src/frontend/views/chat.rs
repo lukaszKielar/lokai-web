@@ -1,7 +1,7 @@
 use leptos::ev::{KeyboardEvent, MouseEvent};
 use leptos::html::*;
 use leptos::*;
-use leptos_router::use_params_map;
+use leptos_router::{use_navigate, use_params_map};
 use leptos_use::{use_websocket, UseWebsocketReturn};
 use uuid::Uuid;
 
@@ -42,9 +42,10 @@ pub(crate) fn Chat() -> impl IntoView {
     let user_prompt = create_rw_signal(String::new());
     let messages = create_rw_signal(Vec::<models::Message>::new());
 
+    // TODO: use ErrorBoundary for the Result
     let db_messages = create_resource(
         move || conversation_id(),
-        move |id| async move { get_conversation_messages(id).await.unwrap() },
+        move |id| async move { get_conversation_messages(id).await },
     );
 
     let bottom_of_chat_div = create_node_ref::<Div>();
@@ -64,8 +65,6 @@ pub(crate) fn Chat() -> impl IntoView {
             messages.update(|msgs| msgs.push(user_message.clone()));
             server_response_pending.set(true);
             send(&serde_json::to_string(&user_message).unwrap());
-            logging::log!("prompt send to the server: {:?}", user_message.content);
-
             user_prompt.set("".to_string());
         }
     };
@@ -137,11 +136,22 @@ pub(crate) fn Chat() -> impl IntoView {
                                     {move || ready_state.get().to_string()}
                                 </div>
                                 <Transition>
-                                    // TODO: reload only when necessary
-                                    {if let Some(msgs) = db_messages.get() {
-                                        messages.set(msgs);
-                                    }}
+                                    //
+                                    <ErrorBoundary fallback=|_| {
+                                        view! { <p>"Error occured"</p> }
+                                    }>
+                                        // SAFETY: it's safe to unwrap because we've navigated away at this point
+                                        {if let Some(res) = db_messages.get() {
+                                            match res {
+                                                Err(err) => {
+                                                    logging::log!("error while loading messages: {:?}", err);
+                                                    use_navigate()("/", Default::default())
+                                                }
+                                                Ok(msgs) => messages.set(msgs),
+                                            }
+                                        }}
 
+                                    </ErrorBoundary>
                                 </Transition>
                                 <Messages messages=messages.read_only()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>

@@ -11,7 +11,12 @@ pub enum Error {
 
 impl Into<ServerFnError> for Error {
     fn into(self) -> ServerFnError {
-        todo!()
+        let msg = match self {
+            Error::DatabaseError(_) => "db error",
+            Error::ReqwestError(_) => "reqwest error",
+        }
+        .to_string();
+        ServerFnError::ServerError(msg)
     }
 }
 

@@ -16,7 +16,6 @@ async fn main() -> Result<()> {
     use lokai::fileserv::file_and_error_handler;
     use lokai::handlers::{leptos_routes_handler, server_fn_handler};
     use lokai::server::db;
-    use lokai::server::error::Result;
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
     use sqlx::SqlitePool;
@@ -118,7 +117,7 @@ cfg_if::cfg_if! {
         use axum::response::Response;
         use lokai::models;
         use uuid::Uuid;
-        use tracing::{debug, info, error};
+        use tracing::{debug, info, error, warn};
         use lokai::state::AppState;
         use lokai::server::ollama::{OllamaChatResponseStream,OllamaChatParams, default_model};
         use lokai::server::db;
@@ -137,7 +136,7 @@ cfg_if::cfg_if! {
             let (inference_response_tx, mut inference_response_rx) = mpsc::channel::<models::Message>(100);
             let (mut sender, mut receiver) = socket.split();
 
-            let inference_thread = tokio::spawn(async move {
+            let mut inference_thread = tokio::spawn(async move {
                 info!("inference thread started");
                 while let Some(user_prompt) = inference_request_rx.recv().await {
                     let inference_response_tx_clone = inference_response_tx.clone();
@@ -154,7 +153,7 @@ cfg_if::cfg_if! {
                 info!("inference thread exited");
             });
 
-            let sender_thread = tokio::spawn(async move {
+            let mut sender_thread = tokio::spawn(async move {
                 info!("ws sender thread started");
                 while let Some(assistant_response_chunk) = inference_response_rx.recv().await {
                     debug!(?assistant_response_chunk, "got assistant response chunk");
@@ -173,7 +172,7 @@ cfg_if::cfg_if! {
                 info!("ws sender thread exited");
             });
 
-            let receiver_thread = tokio::spawn(async move {
+            let mut receiver_thread = tokio::spawn(async move {
                 info!("ws receiver thread started");
                 while let Some(Ok(WebSocketMessage::Text(user_prompt))) = receiver.next().await {
                     debug!(?user_prompt, "user prompt received through websocket");
@@ -195,29 +194,36 @@ cfg_if::cfg_if! {
                 info!("ws receiver thread exited");
             });
 
-            // TODO: consider scenarions when some of the threads fail
-            // handle this kind of situation
-            // https://github.com/tokio-rs/axum/blob/main/examples/websockets/src/main.rs
-            // tokio::select! {
-            //     rv_a = (&mut assistant_response) => {
-            //         match rv_a {
-            //             Ok(_) => println!("rv_a arm Ok"),
-            //             Err(_) => println!("rv_a arm Err"),
-            //         }
-            //         user_prompt_request.abort();
-            //     },
-            //     rv_b = (&mut user_prompt_request) => {
-            //         match rv_b {
-            //             Ok(_) => println!("rv_a arm Ok"),
-            //             Err(_) => println!("rv_a arm Err"),
-            //         }
-            //         assistant_response.abort();
-            //     },
-            // }
+            tokio::select! {
+                inference_thread_result = (&mut inference_thread) => {
+                    match inference_thread_result {
+                        Ok(_) => info!("inference thread exited without errors"),
+                        Err(err) => error!(?err, "error returned by inference thread"),
+                    }
+                    warn!("aborting other threads");
+                    sender_thread.abort();
+                    receiver_thread.abort();
+                },
+                sender_thread_result = (&mut sender_thread) => {
+                    match sender_thread_result {
+                        Ok(_) => info!("sender thread exited without errors"),
+                        Err(err) => error!(?err, "error returned by sender thread"),
+                    }
+                    warn!("aborting other threads");
+                    inference_thread.abort();
+                    receiver_thread.abort();
+                },
+                receiver_thread_result = (&mut receiver_thread) => {
+                    match receiver_thread_result {
+                        Ok(_) => info!("receiver thread exited without errors"),
+                        Err(err) => error!(?err, "error returned by receiver thread"),
+                    }
+                    warn!("aborting other threads");
+                    sender_thread.abort();
+                    inference_thread.abort();
+                },
+            }
 
-            // TODO: consider scenarions when some of the threads fail
-            // handle this kind of situation, use snippet above
-            let _ = inference_thread.await;
             debug!("finished handling a socket");
         }
 
@@ -230,7 +236,8 @@ cfg_if::cfg_if! {
             let conversation_id = conversation.id;
             // TODO: create background thread that creates summary of the question,
             // and use it when saving conversation to the DB
-            db::create_conversation_if_not_exists(app_state.db_pool.clone(), conversation).await;
+            // or simply ask user to put name and pass it in a request
+            let _ = db::create_conversation_if_not_exists(app_state.db_pool.clone(), conversation).await;
             let mut messages = db::get_conversation_messages(app_state.db_pool.clone(), conversation_id).await?;
             messages.push(user_prompt.clone());
 

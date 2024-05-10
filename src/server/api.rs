@@ -30,7 +30,7 @@ pub async fn get_conversation_messages(
 
     let messages = db::get_conversation_messages(db_pool, conversation.id)
         .await
-        .unwrap();
+        .map_err(|err| Into::<ServerFnError>::into(err))?;
 
     Ok(messages)
 }
@@ -45,7 +45,9 @@ pub async fn get_conversations() -> Result<Vec<Conversation>, ServerFnError> {
     slow_down_db().await;
 
     let db_pool = use_context::<SqlitePool>().expect("SqlitePool not found");
-    let conversations = db::get_conversations(db_pool).await.unwrap();
+    let conversations = db::get_conversations(db_pool)
+        .await
+        .map_err(|err| Into::<ServerFnError>::into(err))?;
 
     Ok(conversations)
 }

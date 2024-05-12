@@ -1,7 +1,7 @@
 use leptos::ev::{KeyboardEvent, MouseEvent};
 use leptos::html::*;
 use leptos::*;
-use leptos_router::{use_navigate, use_params_map};
+use leptos_router::use_params_map;
 use leptos_use::{use_websocket, UseWebsocketReturn};
 use uuid::Uuid;
 
@@ -43,7 +43,8 @@ pub(crate) fn Chat() -> impl IntoView {
 
     let db_messages = create_resource(
         move || conversation_id(),
-        move |id| async move { get_conversation_messages(id).await },
+        // FIXME: for some reason it doesn't like ErrorBoundary
+        move |id| async move { get_conversation_messages(id).await.unwrap() },
     );
 
     let bottom_of_chat_div = create_node_ref::<Div>();
@@ -134,21 +135,10 @@ pub(crate) fn Chat() -> impl IntoView {
                                     {move || ready_state.get().to_string()}
                                 </div>
                                 <Transition>
-                                    <ErrorBoundary fallback=|_| {
-                                        view! { <p>"Error occured"</p> }
-                                    }>
-                                        // SAFETY: it's safe to unwrap because we've navigated away at this point
-                                        {if let Some(res) = db_messages.get() {
-                                            match res {
-                                                Err(err) => {
-                                                    logging::log!("error while loading messages: {:?}", err);
-                                                    use_navigate()("/", Default::default())
-                                                }
-                                                Ok(msgs) => messages.set(msgs),
-                                            }
-                                        }}
+                                    {if let Some(msgs) = db_messages.get() {
+                                        messages.set(msgs)
+                                    }}
 
-                                    </ErrorBoundary>
                                 </Transition>
                                 <Messages messages=messages.read_only()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>

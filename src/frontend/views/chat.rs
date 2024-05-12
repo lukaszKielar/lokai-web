@@ -32,6 +32,7 @@ pub(crate) fn Chat() -> impl IntoView {
         params
             .get()
             .get("id")
+            // FIXME: unwrap here can break entire website
             .map(|p| p.parse::<Uuid>().unwrap())
             .unwrap()
     };
@@ -42,6 +43,7 @@ pub(crate) fn Chat() -> impl IntoView {
 
     let db_messages = create_resource(
         move || conversation_id(),
+        // FIXME: for some reason it doesn't like ErrorBoundary
         move |id| async move { get_conversation_messages(id).await.unwrap() },
     );
 
@@ -62,8 +64,6 @@ pub(crate) fn Chat() -> impl IntoView {
             messages.update(|msgs| msgs.push(user_message.clone()));
             server_response_pending.set(true);
             send(&serde_json::to_string(&user_message).unwrap());
-            logging::log!("prompt send to the server: {:?}", user_message.content);
-
             user_prompt.set("".to_string());
         }
     };
@@ -135,15 +135,12 @@ pub(crate) fn Chat() -> impl IntoView {
                                     {move || ready_state.get().to_string()}
                                 </div>
                                 <Transition>
-                                    // TODO: reload only when necessary
                                     {if let Some(msgs) = db_messages.get() {
-                                        messages.set(msgs);
+                                        messages.set(msgs)
                                     }}
 
                                 </Transition>
-                                // TODO: use For and properly update only necessary elements
-                                <Messages messages=messages.into()/>
-
+                                <Messages messages=messages.read_only()/>
                                 <div class="w-full h-32 flex-shrink-0"></div>
                                 <div node_ref=bottom_of_chat_div></div>
                             </div>

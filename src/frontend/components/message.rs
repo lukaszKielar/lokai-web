@@ -7,7 +7,7 @@ use crate::models::{Message as MessageModel, Role};
 pub(crate) fn Message(message: MaybeSignal<MessageModel>) -> impl IntoView {
     let message = message.get();
     let message_role = message.role;
-    let message_content = view! { <p>{message.content}</p> }.into_view();
+    let message_content = message.content.into_view();
 
     let is_user = match Role::from(message_role) {
         Role::Assistant | Role::System => false,
@@ -60,17 +60,10 @@ pub(crate) fn Message(message: MaybeSignal<MessageModel>) -> impl IntoView {
 }
 
 #[component]
-pub(crate) fn Messages(messages: MaybeSignal<Vec<MessageModel>>) -> impl IntoView {
+pub(crate) fn Messages(messages: ReadSignal<Vec<MessageModel>>) -> impl IntoView {
     view! {
-        <>
-            {move || {
-                messages()
-                    .iter()
-                    .map(|m| {
-                        view! { <Message message=m.to_owned().into()/> }
-                    })
-                    .collect_view()
-            }}
-        </>
+        <For each=messages key=|m| (m.id, m.content.clone()) let:message>
+            <Message message=message.to_owned().into()/>
+        </For>
     }
 }

@@ -101,6 +101,12 @@ docker stop ollama
 docker start ollama
 ```
 
+## Unit tests
+
+```bash
+cargo test --all-features
+```
+
 ## Troubleshooting
 
 To get rid off `Permission denied (os error 13)` when running `cargo build/run` type:

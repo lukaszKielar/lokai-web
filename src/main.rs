@@ -5,7 +5,6 @@ use lokai::server::error::Result;
 #[tokio::main]
 async fn main() -> Result<()> {
     use std::env;
-    use std::str::FromStr;
 
     use axum::response::Redirect;
     use axum::routing::get;
@@ -15,12 +14,10 @@ async fn main() -> Result<()> {
     use lokai::app::App;
     use lokai::fileserv::file_and_error_handler;
     use lokai::handlers::{leptos_routes_handler, server_fn_handler};
-    use lokai::server::db;
     use lokai::state::AppState;
     use sqlx::sqlite::SqlitePoolOptions;
     use sqlx::SqlitePool;
     use tracing::info;
-    use uuid::Uuid;
 
     tracing_subscriber::fmt()
         .with_env_filter("lokai=debug")
@@ -33,32 +30,6 @@ async fn main() -> Result<()> {
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
-
-    // FIXME: hack for now, because I want to understand how resources work in leptos
-    let conversation_id = Uuid::from_str("1ec2aa50-b36d-4bf6-a9d8-ef5da43425bb").unwrap();
-    {
-        let db_pool = db_pool.clone();
-        let _ = sqlx::query(
-            r#"
-        DELETE FROM messages;
-        DELETE FROM conversations;
-        INSERT INTO conversations ( id, name )
-        VALUES ( ?1, ?2 );
-            "#,
-        )
-        .bind(conversation_id)
-        .bind("conversation")
-        .execute(&db_pool)
-        .await?;
-    }
-    {
-        let db_pool = db_pool.clone();
-        let conversation = lokai::models::Conversation::new(
-            Uuid::new_v4(),
-            String::from("conversation 2 very loooooooooooong name"),
-        );
-        let _ = db::create_conversation(db_pool, conversation).await?;
-    }
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -87,7 +58,6 @@ async fn main() -> Result<()> {
         .route("/pkg/*path", get(file_and_error_handler))
         .route("/favicon.ico", get(file_and_error_handler))
         .route("/ws", get(websocket))
-        // TODO: I should add static html for all not found
         .route("/*any", get(|| async { Redirect::permanent("/") }))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .fallback(file_and_error_handler)
@@ -227,16 +197,13 @@ cfg_if::cfg_if! {
             debug!("finished handling a socket");
         }
 
-        // TODO: use transactions
         async fn inference(user_prompt: models::Message, inference_response_tx: mpsc::Sender<models::Message>, app_state: AppState) -> Result<()> {
             debug!(conversation_id=user_prompt.conversation_id.to_string(), "start inference");
             let client = app_state.reqwest_client;
 
             let conversation = models::Conversation::new(user_prompt.conversation_id, user_prompt.content.clone());
             let conversation_id = conversation.id;
-            // TODO: create background thread that creates summary of the question,
-            // and use it when saving conversation to the DB
-            // or simply ask user to put name and pass it in a request
+
             let _ = db::create_conversation_if_not_exists(app_state.db_pool.clone(), conversation).await;
             let mut messages = db::get_conversation_messages(app_state.db_pool.clone(), conversation_id).await?;
             messages.push(user_prompt.clone());

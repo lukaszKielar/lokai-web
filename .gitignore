@@ -14,3 +14,4 @@ playwright/.cache/
 
 db.sqlite3*
 localhost.sql
+tmp/

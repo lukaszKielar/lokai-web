@@ -48,7 +48,7 @@ fn Conversations() -> impl IntoView {
         model: _,
     } = use_context().unwrap();
 
-    let db_conversations = create_resource(|| (), |_| async { get_conversations().await.unwrap() });
+    let db_conversations = create_resource(|| (), |_| async { get_conversations().await });
 
     view! {
         <Transition fallback=move || {
@@ -58,12 +58,21 @@ fn Conversations() -> impl IntoView {
                 </>
             }
         }>
-            {if let Some(convs) = db_conversations.get() {
-                conversations.set(convs);
-            }}
-            <For each=conversations key=|c| (c.id, c.name.clone()) let:conversation>
-                <Conversation conversation=conversation.into()/>
-            </For>
+            <ErrorBoundary fallback=|_| {
+                view! { <p>"Error occured"</p> }
+            }>
+                {if let Some(res) = db_conversations.get() {
+                    match res {
+                        Err(err) => {
+                            logging::log!("error while loading conversations: {:?}", err);
+                        }
+                        Ok(convs) => conversations.set(convs),
+                    }
+                }}
+                <For each=conversations key=|c| (c.id, c.name.clone()) let:conversation>
+                    <Conversation conversation=conversation.into()/>
+                </For>
+            </ErrorBoundary>
         </Transition>
     }
 }
@@ -84,14 +93,11 @@ pub(crate) fn Sidebar() -> impl IntoView {
                 <div class="flex-col flex-1 overflow-y-auto border-b border-white/20">
                     <Conversations/>
                 </div>
-                <a class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm">
-                    <Icon icon=icondata::LuTrash2 class="h-4 w-4"/>
-                    "Clear conversations"
-                </a>
-                <a class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm">
-                    <Icon icon=icondata::LuSettings class="h-4 w-4"/>
-                    "Settings"
-                </a>
+            // TODO: add settings button
+            // <a class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm">
+            // <Icon icon=icondata::LuSettings class="h-4 w-4"/>
+            // "Settings"
+            // </a>
             </nav>
         </div>
     }

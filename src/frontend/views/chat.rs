@@ -33,7 +33,6 @@ pub(crate) fn Chat() -> impl IntoView {
             .get()
             .get("id")
             // FIXME: unwrap here can break entire website
-            // I should probably navigate to 404
             .map(|p| p.parse::<Uuid>().unwrap())
             .unwrap()
     };
@@ -135,7 +134,6 @@ pub(crate) fn Chat() -> impl IntoView {
                                     {move || ready_state.get().to_string()}
                                 </div>
                                 <Transition>
-                                    //
                                     <ErrorBoundary fallback=|_| {
                                         view! { <p>"Error occured"</p> }
                                     }>

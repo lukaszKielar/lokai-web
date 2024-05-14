@@ -1,94 +1,110 @@
 {
-	"[javascript]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "always",
-			"source.organizeImports": "always"
-		},
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true
-	},
-	"[json]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "always",
-			"source.organizeImports": "always"
-		},
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true
-	},
-	"[jsonc]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "always",
-			"source.organizeImports": "always"
-		},
-		"editor.defaultFormatter": "esbenp.prettier-vscode",
-		"editor.formatOnSave": true
-	},
-	"[rust]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "explicit",
-			"source.organizeImports": "always"
-		},
-		"editor.defaultFormatter": "rust-lang.rust-analyzer",
-		"editor.formatOnSave": true
-	},
-	"[sql]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "always",
-			"source.organizeImports": "always"
-		},
-		"editor.formatOnSave": true
-	},
-	"[toml]": {
-		"editor.codeActionsOnSave": {
-			"source.fixAll": "always",
-			"source.organizeImports": "always"
-		},
-		"editor.defaultFormatter": "tamasfe.even-better-toml",
-		"editor.formatOnSave": true
-	},
-	"[markdown]": {
-		"editor.formatOnSave": true
-	},
-	"editor.detectIndentation": false,
-	"editor.indentSize": "tabSize",
-	"editor.quickSuggestions": {
-		"strings": "on"
-	},
-	"editor.renderFinalNewline": "dimmed",
-	"editor.renderLineHighlight": "all",
-	"editor.renderWhitespace": "all",
-	"editor.tabSize": 4,
-	"files.associations": {
-		"*.css": "tailwindcss"
-	},
-	"prettier.tabWidth": 4,
-	"prettier.trailingComma": "es5",
-	"prettier.useTabs": true,
-	"rust-analyzer.cargo.features": ["hydrate", "ssr"],
-	"rust-analyzer.procMacro.ignored": {
-		"leptos_macro": ["server"]
-	},
-	"rust-analyzer.rustfmt.overrideCommand": [
-		"leptosfmt",
-		"--stdin",
-		"--rustfmt"
-	],
-	"rust-analyzer.showUnlinkedFileNotification": false,
-	"sqltools.connections": [
-		{
-			"database": "db.sqlite3",
-			"driver": "SQLite",
-			"name": "localhost",
-			"previewLimit": 50
-		}
-	],
-	"sqltools.useNodeRuntime": true,
-	"tabby.api.endpoint": "http://host.docker.internal:8080",
-	"tabby.inlineCompletion.triggerMode": "automatic",
-	"tabby.usage.anonymousUsageTracking": true,
-	"tailwindCSS.experimental.classRegex": ["class: \"(.*)\""],
-	"tailwindCSS.includeLanguages": {
-		"rust": "html"
-	},
-	"workbench.editor.highlightModifiedTabs": true
+    "[dockercompose]": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 4
+    },
+    "[dockerfile]": {
+        "editor.formatOnSave": true
+    },
+    "[javascript]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[json]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[jsonc]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[markdown]": {
+        "editor.formatOnSave": true
+    },
+    "[rust]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.formatOnSave": true
+    },
+    "[sql]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.formatOnSave": true
+    },
+    "[tailwindcss]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+    "[toml]": {
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "always",
+            "source.organizeImports": "always"
+        },
+        "editor.defaultFormatter": "tamasfe.even-better-toml",
+        "editor.formatOnSave": true
+    },
+    "editor.detectIndentation": false,
+    "editor.indentSize": "tabSize",
+    "editor.quickSuggestions": {
+        "strings": "on"
+    },
+    "editor.renderFinalNewline": "dimmed",
+    "editor.renderLineHighlight": "all",
+    "editor.renderWhitespace": "all",
+    "editor.tabSize": 4,
+    "files.associations": {
+        "*.css": "tailwindcss"
+    },
+    "files.trimTrailingWhitespace": true,
+    "prettier.tabWidth": 4,
+    "prettier.trailingComma": "es5",
+    "prettier.useTabs": false,
+    "rust-analyzer.cargo.features": ["hydrate", "ssr"],
+    "rust-analyzer.procMacro.ignored": {
+        "leptos_macro": ["server"]
+    },
+    "rust-analyzer.rustfmt.overrideCommand": [
+        "leptosfmt",
+        "--stdin",
+        "--rustfmt"
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "sqltools.connections": [
+        {
+            "database": "db.sqlite3",
+            "driver": "SQLite",
+            "name": "localhost",
+            "previewLimit": 50
+        }
+    ],
+    "sqltools.useNodeRuntime": true,
+    "tabby.api.endpoint": "http://host.docker.internal:8080",
+    "tabby.inlineCompletion.triggerMode": "automatic",
+    "tabby.usage.anonymousUsageTracking": true,
+    "tailwindCSS.experimental.classRegex": ["class: \"(.*)\""],
+    "tailwindCSS.includeLanguages": {
+        "rust": "html"
+    },
+    "workbench.editor.highlightModifiedTabs": true
 }

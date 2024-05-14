@@ -1,117 +1,41 @@
-# Leptos Axum Starter Template
+# LokAI
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool using [Axum](https://github.com/tokio-rs/axum).
+LokAI is a self-hosted ChatGPT-like AI assistant, that integrates with [Ollama](https://ollama.com/).
+The goal of this project was to learn something about [Leptos](https://leptos.dev/)), LLMs and Rust.
+There are many flaws in it, and I couldn't call it a production grade application, but I had tonne of fun working on it, and I hope it may be an inspiration for some more ambitious projects out there.
 
-## Creating your template repo
-
-If you don't have `cargo-leptos` installed you can install it with
-
-```bash
-cargo install cargo-leptos
-```
-
-Then run
-```bash
-cargo leptos new --git leptos-rs/start-axum
-```
-
-to generate a new project template.
-
-```bash
-cd lokai
-```
-
-to go to your newly created project.  
-Feel free to explore the project structure, but the best place to start with your application code is in `src/app.rs`.  
-Addtionally, Cargo.toml may need updating as new versions of the dependencies are released, especially if things are not working after a `cargo update`.
-
-## Running your project
-
-```bash
-cargo leptos watch
-```
-
-## Installing Additional Tools
-
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
-
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-3. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-4. `npm install -g sass` - install `dart-sass` (should be optional in future
-
-## Compiling for Release
-
-```bash
-cargo leptos build --release
-```
-
-Will generate your server binary in target/server/release and your site package in target/site
-
-## Testing Your Project
-
-```bash
-cargo leptos end-to-end
-```
-
-```bash
-cargo leptos end-to-end --release
-```
-
-Cargo-leptos uses Playwright as the end-to-end test tool.  
-Tests are located in end2end/tests directory.
-
-## Executing a Server on a Remote Machine Without the Toolchain
-
-After running a `cargo leptos build --release` the minimum files needed are:
-
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
-```text
-lokai
-site/
-```
-Set the following environment variables (updating for your project as needed):
-```text
-LEPTOS_OUTPUT_NAME="lokai"
-LEPTOS_SITE_ROOT="site"
-LEPTOS_SITE_PKG_DIR="pkg"
-LEPTOS_SITE_ADDR="127.0.0.1:3000"
-LEPTOS_RELOAD_PORT="3001"
-```
-Finally, run the server binary.
-
-## Licensing
-
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
-
-# Lokai
-
-## Development
-
-- Start ollama
+Before you run the app, make sure you have Ollama server installed and running:
 
 ```bash
 ollama serve
-# OR
+# or with docker
 docker run -v ~/.docker-share/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama # runs once
 docker stop ollama
 docker start ollama
 ```
 
-## Unit tests
+So far the name of the LLM model is hardcoded in the app, and if you don't want to wait ages for the response, you might want to download the model prior to the app, you can do so by typing:
 
 ```bash
-cargo test --all-features
+ollama pull phi3:3.8b
 ```
 
-## Troubleshooting
+To run the project locally with hot-reloading, type:
 
-To get rid off `Permission denied (os error 13)` when running `cargo build/run` type:
+```bash
+cargo leptos watch
+```
 
-```
-sudo chown -R $(whoami) /usr/local/* \
-&& sudo chmod -R g+rwx /usr/local/*
-```
+Once it's done you can navigate to http://localhost:3000 and start conversating with it.
+
+## Development
+
+More to come...
+
+## Licensing
+
+Project is licensed under the MIT license.
+
+## Acknowledgement
+
+This project took an inspiration from [Monte9/nextjs-tailwindcss-chatgpt-clone](https://github.com/Monte9/nextjs-tailwindcss-chatgpt-clone) and [MoonKraken/rusty_llama](https://github.com/MoonKraken/rusty_llama).

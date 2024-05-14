@@ -46,6 +46,9 @@
 		"editor.defaultFormatter": "tamasfe.even-better-toml",
 		"editor.formatOnSave": true
 	},
+	"[markdown]": {
+		"editor.formatOnSave": true
+	},
 	"editor.detectIndentation": false,
 	"editor.indentSize": "tabSize",
 	"editor.quickSuggestions": {

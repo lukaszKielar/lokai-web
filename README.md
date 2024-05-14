@@ -4,6 +4,8 @@ LokAI is a self-hosted ChatGPT-like AI assistant, that integrates with [Ollama](
 The goal of this project was to learn something about [Leptos](https://leptos.dev/)), LLMs and Rust.
 There are many flaws in it, and I couldn't call it a production grade application, but I had tonne of fun working on it, and I hope it may be an inspiration for some more ambitious projects out there.
 
+<video src="https://github.com/lukaszKielar/lokai/assets/31779738/2abbab35-5add-45c9-a8e6-80de75b6549f"></video>
+
 Before you run the app, make sure you have Ollama server installed and running:
 
 ```bash

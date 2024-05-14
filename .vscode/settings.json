@@ -80,15 +80,6 @@
     "prettier.tabWidth": 4,
     "prettier.trailingComma": "es5",
     "prettier.useTabs": false,
-    "rust-analyzer.cargo.features": ["hydrate", "ssr"],
-    "rust-analyzer.procMacro.ignored": {
-        "leptos_macro": ["server"]
-    },
-    "rust-analyzer.rustfmt.overrideCommand": [
-        "leptosfmt",
-        "--stdin",
-        "--rustfmt"
-    ],
     "rust-analyzer.showUnlinkedFileNotification": false,
     "sqltools.connections": [
         {

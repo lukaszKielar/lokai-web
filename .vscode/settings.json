@@ -6,6 +6,10 @@
     "[dockerfile]": {
         "editor.formatOnSave": true
     },
+    "[html]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
     "[javascript]": {
         "editor.codeActionsOnSave": {
             "source.fixAll": "always",

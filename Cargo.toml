@@ -1,21 +1,23 @@
 # TODO: define optimisation settings
 [package]
 name = "lokai"
+authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
 version = "0.1.0"
 edition = "2021"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
+license = "MIT"
+publish = false
 
 # TODO: use native tls crate
 [dependencies]
-# TODO: consider maud
-askama = "0.12"
+async-compression = { version = "0.4", features = ["brotli", "tokio"] }
 axum = { version = "0.7", features = ["macros", "tokio", "ws"] }
+axum-htmx = { version = "0.5" }
+bytes = "1"
 console_error_panic_hook = "0.1"
 derive_more = { version = "0.99" }
 futures-util = { version = "0.3" }
 http = "1"
+minijinja = { version = "2.0", features = ["loader"] }
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "stream",
@@ -36,3 +38,9 @@ tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["std", "env-filter"] }
 # TODO: use uuid v7 or something nicer
 uuid = { version = "1.8", features = ["v4", "serde"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+strip = true

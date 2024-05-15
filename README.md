@@ -41,3 +41,9 @@ Project is licensed under the MIT license.
 ## Acknowledgement
 
 This project took an inspiration from [Monte9/nextjs-tailwindcss-chatgpt-clone](https://github.com/Monte9/nextjs-tailwindcss-chatgpt-clone) and [MoonKraken/rusty_llama](https://github.com/MoonKraken/rusty_llama).
+
+## Watch
+
+```bash
+cargo watch -w src -w templates -w assets -x run
+```

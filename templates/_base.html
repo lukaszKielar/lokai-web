@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, height=device-height, initial-scale=1.0"
+        />
+        <link
+            rel="shortcut icon"
+            type="image/x-icon"
+            href="/{{ base.favicon }}"
+        />
+        <link rel="stylesheet" href="/{{ base.styles }}" />
+        <script defer src="/{{ base.scripts }}"></script>
+        <title>LokAI - your self-hosted AI assistant</title>
+    </head>
+    <body>
+        <main>
+            <!-- prettier-ignore  -->
+            {% block main %} {% endblock %}
+        </main>
+    </body>
+</html>

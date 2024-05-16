@@ -9,16 +9,21 @@
         <link
             rel="shortcut icon"
             type="image/x-icon"
-            href="/{{ base.favicon }}"
+            href="/static/favicon.ico"
         />
-        <link rel="stylesheet" href="/{{ base.styles }}" />
-        <script defer src="/{{ base.scripts }}"></script>
+        <link rel="stylesheet" href="/static/index.css" />
+        <script
+            src="https://unpkg.com/htmx.org@1.9.12"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"
+        ></script>
         <title>LokAI - your self-hosted AI assistant</title>
     </head>
     <body>
-        <main>
+        <main class="font-sans">
             <!-- prettier-ignore  -->
-            {% block main %} {% endblock %}
+            {% block main %}
+            {% endblock %}
         </main>
     </body>
 </html>

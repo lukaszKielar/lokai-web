@@ -1,28 +1,32 @@
 #![forbid(unsafe_code)]
-mod asset_cache;
 mod error;
+mod models;
 mod routes;
 mod state;
 
-use crate::asset_cache::{AssetCache, SharedAssetCache};
-use crate::routes::{route_handler, BaseTemplateData, SharedBaseTemplateData};
+use crate::routes::{index, not_found};
 use crate::state::{AppState, SharedAppState};
 
-use axum::extract::{Path, Request, State};
+use axum::extract::ws::{Message as WebSocketMessage, WebSocket};
+use axum::extract::{Path, Request, State, WebSocketUpgrade};
+use axum::handler::{Handler, HandlerWithoutStateExt};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::get;
 use axum::{middleware, Router};
+use futures_util::{SinkExt as _, StreamExt as _};
 use http::header::{CONTENT_ENCODING, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue, StatusCode};
-use minijinja::Environment;
+use minijinja::{context, Environment};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
+use tokio::sync::mpsc;
+use tower_http::services::{ServeDir, ServeFile};
 
 use std::ffi::OsStr;
-use tracing::info;
+use tracing::{debug, error, info};
 
 pub type BoxedError = Box<dyn std::error::Error>;
 
@@ -44,21 +48,23 @@ async fn main() -> Result<(), BoxedError> {
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
-    let assets: SharedAssetCache = leak_alloc(AssetCache::load_files().await);
-    let base_template_data: SharedBaseTemplateData = leak_alloc(BaseTemplateData::new(assets));
     let env = import_templates()?;
 
     let app_state = leak_alloc(AppState {
         sqlite: sqlite,
         reqwest_client: reqwest::Client::new(),
-        assets: assets,
-        base_template_data: base_template_data,
         env: env,
     });
 
     let app = Router::new()
-        .merge(route_handler(app_state))
-        .nest_service("/assets", static_file_handler(app_state));
+        .route("/", get(index))
+        .nest_service("/robots.txt", ServeFile::new("static/robots.txt"))
+        .nest_service(
+            "/static",
+            ServeDir::new("static").not_found_service(not_found.with_state(app_state)),
+        )
+        .fallback(not_found)
+        .with_state(app_state);
     // .route(
     //     "/api/*fn_name",
     //     get(server_fn_handler).post(server_fn_handler),
@@ -83,38 +89,6 @@ async fn main() -> Result<(), BoxedError> {
     Ok(())
 }
 
-fn static_file_handler(state: SharedAppState) -> Router {
-    Router::new()
-        .route(
-            "/:file",
-            get(
-                |state: State<SharedAppState>, path: Path<String>| async move {
-                    let Some(asset) = state.assets.get_from_path(&path) else {
-                        return StatusCode::NOT_FOUND.into_response();
-                    };
-
-                    let mut headers = HeaderMap::new();
-
-                    // We set the content type explicitly here as it will otherwise
-                    // be inferred as an `octet-stream`
-                    headers.insert(
-                        CONTENT_TYPE,
-                        HeaderValue::from_static(asset.ext().unwrap_or("")),
-                    );
-
-                    if [Some("css"), Some("js")].contains(&asset.ext()) {
-                        headers.insert(CONTENT_ENCODING, HeaderValue::from_static("br"));
-                    }
-
-                    // `bytes::Bytes` clones are cheap
-                    (headers, asset.contents.clone()).into_response()
-                },
-            ),
-        )
-        .layer(middleware::from_fn(cache_control))
-        .with_state(state)
-}
-
 fn import_templates() -> Result<Environment<'static>, BoxedError> {
     let mut env = Environment::new();
 
@@ -137,36 +111,11 @@ fn import_templates() -> Result<Environment<'static>, BoxedError> {
     Ok(env)
 }
 
-async fn cache_control(request: Request, next: Next) -> Response {
-    let mut response = next.run(request).await;
-
-    if let Some(content_type) = response.headers().get(CONTENT_TYPE) {
-        const CACHEABLE_CONTENT_TYPES: [&str; 6] = [
-            "text/css",
-            "application/javascript",
-            "image/svg+xml",
-            "image/webp",
-            "font/woff2",
-            "image/png",
-        ];
-
-        if CACHEABLE_CONTENT_TYPES.iter().any(|&ct| content_type == ct) {
-            let value = format!("public, max-age={}", 60 * 60 * 24);
-
-            if let Ok(value) = HeaderValue::from_str(&value) {
-                response.headers_mut().insert("cache-control", value);
-            }
-        }
-    }
-
-    response
-}
-
-// pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<AppState>) -> Response {
+// pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<SharedAppState>) -> Response {
 //     ws.on_upgrade(|socket| handle_socket(socket, app_state))
 // }
 
-// async fn handle_socket(socket: WebSocket, app_state: AppState) {
+// async fn handle_socket(socket: WebSocket, app_state: SharedAppState) {
 //     debug!("start handling a socket");
 
 //     let (inference_request_tx, mut inference_request_rx) = mpsc::channel::<models::Message>(100);

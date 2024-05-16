@@ -1,9 +1,48 @@
 <!-- prettier-ignore -->
 {% extends "_base.html" %}
 {% block main %}
+<div class="overflow-hidden w-full h-screen relative flex">
+    <div
+        class="dark hidden flex-shrink-0 bg-gray-900 md:flex md:w-[260px] md:flex-col"
+    >
+        <div class="flex h-full min-h-0 flex-col">sidebar</div>
+    </div>
 
-<h1 class="text-2xl font-bold">Home</h1>
-
-<p>This is the home page!</p>
-
+    <div class="flex max-w-full flex-1 flex-col">
+        <div
+            class="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1"
+        >
+            <div class="flex-1 overflow-hidden">
+                <div
+                    class="scroll-to-bottom--css-ikyem-79elbk h-full dark:bg-gray-800"
+                >
+                    <div class="scroll-to-bottom--css-ikyem-1n7m0yu">
+                        <div
+                            class="flex flex-col items-center text-sm bg-gray-800"
+                        >
+                            <div
+                                class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
+                            >
+                                "Model: " <b>{model}</b> ", Server: " {move ||
+                                ready_state.get().to_string()}
+                            </div>
+                            <Messages messages="messages.read_only()" />
+                            <div class="w-full h-32 flex-shrink-0"></div>
+                            <div node_ref="bottom_of_chat_div"></div>
+                        </div>
+                        <div
+                            class="flex flex-col items-center text-sm dark:bg-gray-800"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+            <Prompt
+                user_prompt="user_prompt"
+                on_click="on_click"
+                on_keydown="on_keydown"
+                server_response_pending="server_response_pending.read_only()"
+            />
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -5,38 +5,21 @@ fn main() {
     println!("cargo:rerun-if-changed=templates");
     println!("cargo:rerun-if-changed=migrations");
 
-    std::fs::remove_dir_all("build").unwrap_or_default();
+    std::fs::remove_dir_all("static").unwrap_or_default();
 
-    Command::new("bun")
+    Command::new("tailwindcss")
         .args([
-            "run",
-            "tailwindcss",
             "-c",
             "tailwind.config.js",
             "-i",
             "assets/styles/index.css",
             "-o",
-            "build/index.css",
+            "static/index.css",
             "--minify",
         ])
         .status()
         .expect("failed to run tailwindcss");
 
-    Command::new("bun")
-        .args([
-            "build",
-            "--minify",
-            "--outdir=build",
-            "--entry-naming",
-            "[name].[hash].[ext]",
-            "--asset-naming",
-            "[name].[hash].[ext]",
-            "./assets/scripts/index.ts",
-        ])
-        .status()
-        .expect("failed to run bun");
-
-    std::fs::remove_file("build/index.css").unwrap_or_default();
     copy_files("public");
 }
 
@@ -49,7 +32,7 @@ fn copy_files(dir: &str) {
         } else {
             let path = entry.path();
             let filename = path.file_name().unwrap().to_str().unwrap();
-            let dest = format!("build/{}", filename);
+            let dest = format!("static/{}", filename);
 
             std::fs::copy(path, dest).expect("failed to copy file");
         }

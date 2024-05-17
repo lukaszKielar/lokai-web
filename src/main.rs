@@ -1,11 +1,12 @@
 #![forbid(unsafe_code)]
+mod db;
 mod error;
+mod frontend;
 mod models;
-mod routes;
 mod state;
 
-use crate::routes::{index, not_found};
-use crate::state::{AppState, SharedAppState};
+use crate::frontend::handlers::{index, not_found};
+use crate::state::AppState;
 
 use axum::extract::ws::{Message as WebSocketMessage, WebSocket};
 use axum::extract::{Path, Request, State, WebSocketUpgrade};
@@ -18,7 +19,6 @@ use axum::{middleware, Router};
 use futures_util::{SinkExt as _, StreamExt as _};
 use http::header::{CONTENT_ENCODING, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue, StatusCode};
-use minijinja::{context, Environment};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
@@ -29,11 +29,6 @@ use std::ffi::OsStr;
 use tracing::{debug, error, info};
 
 pub type BoxedError = Box<dyn std::error::Error>;
-
-/// Leak a value as a static reference.
-pub fn leak_alloc<T>(value: T) -> &'static T {
-    Box::leak(Box::new(value))
-}
 
 #[tokio::main]
 async fn main() -> Result<(), BoxedError> {
@@ -48,20 +43,29 @@ async fn main() -> Result<(), BoxedError> {
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
-    let env = import_templates()?;
 
-    let app_state = leak_alloc(AppState {
+    // {
+    //     let sqlite = sqlite.clone();
+    //     let conversation = models::Conversation::new("conversation 1".to_string());
+    //     db::create_conversation(sqlite, conversation).await.unwrap();
+    // }
+    // {
+    //     let sqlite = sqlite.clone();
+    //     let conversation = models::Conversation::new("conversation 2".to_string());
+    //     db::create_conversation(sqlite, conversation).await.unwrap();
+    // }
+
+    let app_state = AppState {
         sqlite: sqlite,
         reqwest_client: reqwest::Client::new(),
-        env: env,
-    });
+    };
 
     let app = Router::new()
         .route("/", get(index))
         .nest_service("/robots.txt", ServeFile::new("static/robots.txt"))
         .nest_service(
             "/static",
-            ServeDir::new("static").not_found_service(not_found.with_state(app_state)),
+            ServeDir::new("static").not_found_service(not_found.with_state(app_state.clone())),
         )
         .fallback(not_found)
         .with_state(app_state);
@@ -87,28 +91,6 @@ async fn main() -> Result<(), BoxedError> {
         .expect("Cannot start server");
 
     Ok(())
-}
-
-fn import_templates() -> Result<Environment<'static>, BoxedError> {
-    let mut env = Environment::new();
-
-    for entry in std::fs::read_dir("templates")?.filter_map(Result::ok) {
-        let path = entry.path();
-
-        if path.is_file() && path.extension() == Some(OsStr::new("html")) {
-            let name = path
-                .file_name()
-                .and_then(OsStr::to_str)
-                .ok_or("failed to convert path to string")?
-                .to_owned();
-
-            let data = std::fs::read_to_string(&path)?;
-
-            env.add_template_owned(name, data)?;
-        }
-    }
-
-    Ok(env)
 }
 
 // pub async fn websocket(ws: WebSocketUpgrade, State(app_state): State<SharedAppState>) -> Response {

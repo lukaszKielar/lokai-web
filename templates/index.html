@@ -5,7 +5,67 @@
     <div
         class="dark hidden flex-shrink-0 bg-gray-900 md:flex md:w-[260px] md:flex-col"
     >
-        <div class="flex h-full min-h-0 flex-col">sidebar</div>
+        <div class="flex h-full min-h-0 flex-col">
+            <div
+                class="scrollbar-trigger flex h-full w-full flex-1 items-start border-white/20"
+            >
+                <nav class="flex h-full flex-1 flex-col space-y-1 p-2">
+                    <a
+                        href="/"
+                        class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm mb-1 flex-shrink-0 border border-white/20"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="icon icon-tabler icons-tabler-outline icon-tabler-plus"
+                        >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M12 5l0 14" />
+                            <path d="M5 12l14 0" />
+                        </svg>
+                        New chat
+                    </a>
+                    <div
+                        class="flex-col flex-1 overflow-y-auto border-b border-white/20"
+                    >
+                        <!-- prettier-ignore -->
+                        {% for conversation in conversations %}
+                            {% include "sidebar/conversation.html" %}
+                        {% endfor %}
+                    </div>
+                    <a
+                        class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="icon icon-tabler icons-tabler-outline icon-tabler-settings"
+                        >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"
+                            />
+                            <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                        </svg>
+                        Settings
+                    </a>
+                </nav>
+            </div>
+        </div>
     </div>
 
     <div class="flex max-w-full flex-1 flex-col">
@@ -23,8 +83,7 @@
                             <div
                                 class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
                             >
-                                "Model: " <b>{model}</b> ", Server: " {move ||
-                                ready_state.get().to_string()}
+                                Model: <b>model</b>, Server: serverState
                             </div>
                             <Messages messages="messages.read_only()" />
                             <div class="w-full h-32 flex-shrink-0"></div>

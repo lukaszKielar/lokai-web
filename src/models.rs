@@ -1,5 +1,5 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "ssr")]
 use sqlx::FromRow;
 use uuid::Uuid;
 
@@ -47,33 +47,32 @@ impl std::fmt::Display for Role {
     }
 }
 
-// TODO: message should be reactive, saying, whenever it changes, I should update UI
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "ssr", derive(FromRow))]
+#[derive(FromRow, Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Message {
     pub id: Uuid,
     pub role: String,
     pub content: String,
-    // TODO: this should be only for ssr
     pub conversation_id: Uuid,
+    pub created_at: DateTime<Utc>,
 }
 
 impl Message {
-    fn new(id: Uuid, role: Role, content: String, conversation_id: Uuid) -> Self {
+    fn new(role: Role, content: String, conversation_id: Uuid) -> Self {
         Self {
-            id,
+            id: Uuid::new_v4(),
             role: role.to_string(),
             content,
             conversation_id,
+            created_at: Utc::now(),
         }
     }
 
-    pub fn user(id: Uuid, content: String, conversation_id: Uuid) -> Self {
-        Self::new(id, Role::User, content, conversation_id)
+    pub fn user(content: String, conversation_id: Uuid) -> Self {
+        Self::new(Role::User, content, conversation_id)
     }
 
-    pub fn assistant(id: Uuid, content: String, conversation_id: Uuid) -> Self {
-        Self::new(id, Role::Assistant, content, conversation_id)
+    pub fn assistant(content: String, conversation_id: Uuid) -> Self {
+        Self::new(Role::Assistant, content, conversation_id)
     }
 
     pub fn update_content(&mut self, update: &str) {
@@ -81,15 +80,19 @@ impl Message {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "ssr", derive(FromRow))]
+#[derive(Deserialize, Serialize, Debug, Clone, FromRow, PartialEq)]
 pub struct Conversation {
     pub id: Uuid,
     pub name: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl Conversation {
-    pub fn new(id: Uuid, name: String) -> Self {
-        Self { id, name }
+    pub fn new(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name,
+            created_at: Utc::now(),
+        }
     }
 }

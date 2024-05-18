@@ -2,9 +2,7 @@
 {% extends "_base.html" %}
 {% block main %}
 <div class="overflow-hidden w-full h-screen relative flex">
-    <div
-        class="dark hidden flex-shrink-0 bg-gray-900 md:flex md:w-[260px] md:flex-col"
-    >
+    <div class="dark flex-shrink-0 bg-gray-900 flex w-[260px] flex-col">
         <div class="flex h-full min-h-0 flex-col">
             <div
                 class="scrollbar-trigger flex h-full w-full flex-1 items-start border-white/20"
@@ -74,7 +72,7 @@
         >
             <div class="flex-1 overflow-hidden">
                 <div
-                    class="scroll-to-bottom--css-ikyem-79elbk h-full dark:bg-gray-800"
+                    class="scroll-to-bottom--css-ikyem-79elbk h-full bg-gray-800"
                 >
                     <div class="scroll-to-bottom--css-ikyem-1n7m0yu">
                         <div
@@ -85,22 +83,19 @@
                             >
                                 Model: <b>model</b>, Server: serverState
                             </div>
-                            <Messages messages="messages.read_only()" />
+                            <!-- TODO: create two different views: index, chat by extending this template -->
+                            {% block messages %}{% endblock %}
                             <div class="w-full h-32 flex-shrink-0"></div>
+                            <!-- TODO: Remove all node_ref -->
                             <div node_ref="bottom_of_chat_div"></div>
                         </div>
                         <div
-                            class="flex flex-col items-center text-sm dark:bg-gray-800"
+                            class="flex flex-col items-center text-sm bg-gray-800"
                         ></div>
                     </div>
                 </div>
             </div>
-            <Prompt
-                user_prompt="user_prompt"
-                on_click="on_click"
-                on_keydown="on_keydown"
-                server_response_pending="server_response_pending.read_only()"
-            />
+            {% include "chat_area/prompt.html" %}
         </div>
     </div>
 </div>

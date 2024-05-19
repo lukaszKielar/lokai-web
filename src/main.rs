@@ -5,7 +5,7 @@ mod frontend;
 mod models;
 mod state;
 
-use crate::frontend::handlers::{index, not_found};
+use crate::frontend::handlers::{conversation, index, not_found};
 use crate::state::AppState;
 
 use axum::extract::ws::{Message as WebSocketMessage, WebSocket};
@@ -20,7 +20,7 @@ use futures_util::{SinkExt as _, StreamExt as _};
 use http::header::{CONTENT_ENCODING, CONTENT_TYPE};
 use http::{HeaderMap, HeaderValue, StatusCode};
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::SqlitePool;
+use sqlx::{Sqlite, SqlitePool};
 use std::env;
 use tokio::sync::mpsc;
 use tower_http::services::{ServeDir, ServeFile};
@@ -44,16 +44,7 @@ async fn main() -> Result<(), BoxedError> {
         .await
         .expect("Could not make pool.");
 
-    // {
-    //     let sqlite = sqlite.clone();
-    //     let conversation = models::Conversation::new("conversation 1".to_string());
-    //     db::create_conversation(sqlite, conversation).await.unwrap();
-    // }
-    // {
-    //     let sqlite = sqlite.clone();
-    //     let conversation = models::Conversation::new("conversation 2".to_string());
-    //     db::create_conversation(sqlite, conversation).await.unwrap();
-    // }
+    // create_data(sqlite.clone()).await;
 
     let app_state = AppState {
         sqlite: sqlite,
@@ -62,6 +53,7 @@ async fn main() -> Result<(), BoxedError> {
 
     let app = Router::new()
         .route("/", get(index))
+        .route("/c/:id", get(conversation))
         .nest_service("/robots.txt", ServeFile::new("static/robots.txt"))
         .nest_service(
             "/static",
@@ -274,3 +266,33 @@ async fn main() -> Result<(), BoxedError> {
 
 //     Ok(())
 // }
+
+async fn create_data(sqlite: SqlitePool) {
+    {
+        let sqlite = sqlite.clone();
+        let conversation = models::Conversation::new("conversation 1".to_string());
+        db::create_conversation(sqlite.clone(), conversation.clone())
+            .await
+            .unwrap();
+        db::create_message(
+            sqlite.clone(),
+            models::Message::user("why is the sky blue?".to_string(), conversation.id.clone()),
+        )
+        .await
+        .unwrap();
+        db::create_message(
+            sqlite.clone(),
+            models::Message::assistant(
+                "it's not blue, it's red!!".to_string(),
+                conversation.id.clone(),
+            ),
+        )
+        .await
+        .unwrap();
+    }
+    for i in 2..=20 {
+        let sqlite = sqlite.clone();
+        let conversation = models::Conversation::new(format!("conversation {i}"));
+        db::create_conversation(sqlite, conversation).await.unwrap();
+    }
+}

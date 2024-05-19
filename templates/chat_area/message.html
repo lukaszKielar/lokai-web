@@ -1,0 +1,75 @@
+<!-- prettier-ignore -->
+{% let role = message.role.clone() %}
+{% let message_bg %}
+{% if role == "user" %}
+    {% let message_bg = "bg-gray-800" %}
+{% else %}
+    {% let message_bg = "bg-[#444654]" %}
+{% endif %}
+<div
+    class="group w-full text-gray-100 border-b border-gray-900/50 {{ message_bg }}"
+>
+    <div class="text-base gap-6 max-w-3xl flex px-0 m-auto w-full">
+        <div class="flex flex-row gap-6 p-4 w-full">
+            <div
+                class="w-8 flex flex-col relative place-content-center place-items-center"
+            >
+                <div
+                    class="relative h-8 w-8 p-1 rounded-full text-white flex items-center justify-center bg-black/75 text-opacity-100r"
+                >
+                    <!-- prettier-ignore -->
+                    {% if role == "user" %}
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-user"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                        <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                    </svg>
+                    {% else %}
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-robot"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path
+                            d="M6 4m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v4a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"
+                        />
+                        <path d="M12 2v2" />
+                        <path d="M9 12v9" />
+                        <path d="M15 12v9" />
+                        <path d="M5 16l4 -2" />
+                        <path d="M15 14l4 2" />
+                        <path d="M9 18h6" />
+                        <path d="M10 8v.01" />
+                        <path d="M14 8v.01" />
+                    </svg>
+                    {% endif %}
+                </div>
+            </div>
+            <div
+                id="msg-{{ message.id }}"
+                class="relative flex flex-1 gap-6 min-h-10 items-center whitespace-pre-wrap break-words justify-start"
+            >
+                {{- message.content -}}
+            </div>
+        </div>
+    </div>
+</div>

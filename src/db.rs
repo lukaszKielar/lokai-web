@@ -54,6 +54,10 @@ pub async fn get_conversation(
     sqlite: SqlitePool,
     conversation_id: Uuid,
 ) -> Result<Option<Conversation>> {
+    debug!(
+        conversation_id = conversation_id.to_string(),
+        "getting conversation from db"
+    );
     let maybe_conversation: Option<Conversation> = sqlx::query_as(
         r#"
 SELECT *

@@ -2,10 +2,14 @@
     class="absolute bottom-0 left-0 w-full border-t border-transparent bg-vert-light-gradient !bg-transparent bg-vert-dark-gradient pt-2 flex flex-col"
 >
     <div
+        hx-ext="ws"
+        ws-connect="/ws"
         class="flex flex-col w-full px-10 place-content-center place-items-center"
     >
         <form
+            id="user-prompt-form"
             class="relative flex flex-1 flex-row h-full w-3/4 items-stretch text-white"
+            ws-send
         >
             <div
                 class="flex flex-col w-full py-2 flex-grow border border-gray-900/50 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
@@ -14,6 +18,7 @@
                 <!-- TODO: implement nice focus -->
                 <textarea
                     id="user-prompt-ta"
+                    name="user_prompt"
                     type="text"
                     placeholder="Message LokAI..."
                     class="m-0 w-full resize-none border-0 p-0 pr-10 bg-transparent pl-2 h-[24px] max-h-[216px] overflow-y-auto"
@@ -35,6 +40,7 @@
                 ></textarea>
             </div>
             <div class="absolute flex flex-1 bottom-0 right-0 p-1">
+                <!-- TODO: disable button once htmx ws send event is done -->
                 <button
                     id="user-prompt-btn"
                     class="p-1 rounded-md bg-transparent disabled:bg-gray-500 disabled:opacity-40 cursor-pointer"

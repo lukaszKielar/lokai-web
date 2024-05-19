@@ -1,6 +1,9 @@
+use std::{collections::HashMap, str::FromStr};
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use url::Url;
 use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,6 +83,40 @@ impl Message {
     }
 }
 
+#[allow(non_snake_case)]
+#[derive(Deserialize, Serialize, Debug)]
+pub struct UserPromptFormMessage {
+    pub user_prompt: String,
+    pub HEADERS: HashMap<String, serde_json::Value>,
+}
+
+impl UserPromptFormMessage {
+    fn hx_current_url(&self) -> &str {
+        // SAFETY: it's safe to unwrap because:
+        // - we know we'll get HX-Current-URL header value
+        // - we know that HX-Current-URL value is String(String), so as_str returns Some(&str)
+        self.HEADERS
+            .get("HX-Current-URL")
+            .unwrap()
+            .as_str()
+            .unwrap()
+    }
+
+    pub fn conversation_id(&self) -> Uuid {
+        // SAFETY: We can unwrap as we know the value set by HTMX is correct
+        let url = Url::parse(self.hx_current_url()).unwrap();
+        let path = url.path().strip_prefix("/c/").unwrap();
+        // SAFETY: We can unwrap because router doesn't allow invalid UUIDs
+        Uuid::from_str(path).unwrap()
+    }
+}
+
+impl From<UserPromptFormMessage> for Message {
+    fn from(value: UserPromptFormMessage) -> Self {
+        Message::user(value.user_prompt.clone(), value.conversation_id())
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, FromRow, PartialEq)]
 pub struct Conversation {
     pub id: Uuid,
@@ -94,5 +131,35 @@ impl Conversation {
             name,
             created_at: Utc::now(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_get_conversation_id() {
+        // given:
+        let mut htmx_headers: HashMap<String, serde_json::Value> = HashMap::new();
+        htmx_headers.insert(
+            "HX-Current-URL".to_string(),
+            json!("http://localhost:3000/c/a310afea-981e-4054-924a-37090ac227e2"),
+        );
+        let user_prompt_form_message = UserPromptFormMessage {
+            user_prompt: "".to_string(),
+            HEADERS: htmx_headers,
+        };
+
+        // when:
+        let conversation_id = user_prompt_form_message.conversation_id();
+
+        // then:
+        assert_eq!(
+            conversation_id,
+            Uuid::from_str("a310afea-981e-4054-924a-37090ac227e2").unwrap()
+        );
     }
 }

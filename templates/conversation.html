@@ -1,7 +1,10 @@
 <!-- prettier-ignore -->
 {% extends "index.html" %}
 {% block messages %}
-{% for message in messages %}
-    {% include "chat_area/message.html" %}
-{% endfor %}
+<div id="conversation-messages">
+    <!-- prettier-ignore -->
+    {% for message in messages %}
+        {% include "chat_area/message.html" %}
+    {% endfor %}
+</div>
 {% endblock %}

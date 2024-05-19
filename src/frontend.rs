@@ -1,4 +1,4 @@
-mod templates {
+pub(crate) mod templates {
     use askama::Template;
 
     use crate::models;
@@ -19,6 +19,18 @@ mod templates {
     #[derive(Template)]
     #[template(path = "not_found.html")]
     pub(super) struct NotFound;
+
+    #[derive(Template)]
+    #[template(path = "chat_area/append_message.html")]
+    pub(crate) struct ChatAreaAppendMessage {
+        pub message: models::Message,
+    }
+
+    #[derive(Template)]
+    #[template(path = "chat_area/swap_message.html")]
+    pub(crate) struct ChatAreaSwapMessage {
+        pub message: models::Message,
+    }
 }
 
 pub mod handlers {

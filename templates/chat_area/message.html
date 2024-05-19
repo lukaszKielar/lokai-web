@@ -1,12 +1,13 @@
 <!-- prettier-ignore -->
-{% let role = message.role.clone() %}
-{% let message_bg %}
-{% if role == "user" %}
-    {% let message_bg = "bg-gray-800" %}
-{% else %}
-    {% let message_bg = "bg-[#444654]" %}
-{% endif %}
+{% let role = message.role.clone() -%}
+{%- let message_bg -%}
+{%- if role == "user" -%}
+    {%- let message_bg = "bg-gray-800" -%}
+{%- else -%}
+    {%- let message_bg = "bg-[#444654]" -%}
+{%- endif -%}
 <div
+    id="msg-{{ message.id }}"
     class="group w-full text-gray-100 border-b border-gray-900/50 {{ message_bg }}"
 >
     <div class="flex px-0 w-full">
@@ -18,7 +19,7 @@
                     class="relative h-8 w-full p-1 rounded-full text-white flex items-center justify-center bg-black/75 text-opacity-100r"
                 >
                     <!-- prettier-ignore -->
-                    {% if role == "user" %}
+                    {% if role == "user" -%}
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -35,7 +36,7 @@
                         <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
                         <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
                     </svg>
-                    {% else %}
+                    {%- else -%}
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -61,11 +62,10 @@
                         <path d="M10 8v.01" />
                         <path d="M14 8v.01" />
                     </svg>
-                    {% endif %}
+                    {%- endif %}
                 </div>
             </div>
             <div
-                id="msg-{{ message.id }}"
                 class="relative flex flex-1 min-h-10 items-center whitespace-pre-wrap break-words justify-start"
             >
                 {{- message.content -}}

@@ -12,6 +12,7 @@ use tracing::{debug, error, info, warn};
 use crate::{
     db,
     error::Result,
+    frontend::templates::{ChatAreaAppendMessage, ChatAreaSwapMessage},
     ollama::{default_model, OllamaChatParams, OllamaChatResponseStream},
 };
 use crate::{models, state::AppState};
@@ -24,7 +25,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     debug!("start handling a socket");
 
     let (inference_request_tx, mut inference_request_rx) = mpsc::channel::<models::Message>(100);
-    let (inference_response_tx, mut inference_response_rx) = mpsc::channel::<models::Message>(100);
+    let (inference_response_tx, mut inference_response_rx) = mpsc::channel::<String>(100);
     let (mut sender, mut receiver) = socket.split();
 
     let mut inference_thread = tokio::spawn(async move {
@@ -46,18 +47,13 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
     let mut sender_thread = tokio::spawn(async move {
         info!("ws sender thread started");
-        while let Some(assistant_response_chunk) = inference_response_rx.recv().await {
-            debug!(?assistant_response_chunk, "got assistant response chunk");
-            let assistant_response_chunk_json =
-                match serde_json::to_string(&assistant_response_chunk) {
-                    Ok(value) => value,
-                    Err(err) => {
-                        error!(?err, "cannot serialise assistant response, exiting...");
-                        break;
-                    }
-                };
+        while let Some(assistant_response_chunk_html) = inference_response_rx.recv().await {
+            debug!(
+                ?assistant_response_chunk_html,
+                "got assistant response chunk"
+            );
             if sender
-                .send(Message::Text(assistant_response_chunk_json))
+                .send(Message::Text(assistant_response_chunk_html))
                 .await
                 .is_err()
             {
@@ -134,7 +130,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 
 async fn inference(
     user_prompt: models::Message,
-    inference_response_tx: mpsc::Sender<models::Message>,
+    inference_response_tx: mpsc::Sender<String>,
     state: AppState,
 ) -> Result<()> {
     debug!(
@@ -153,9 +149,17 @@ async fn inference(
     messages.push(user_prompt.clone());
 
     {
-        // TODO: send user_prompt right back
         let sqlite = state.sqlite.clone();
-        let _ = db::create_message(sqlite, user_prompt).await?;
+        let _ = db::create_message(sqlite, user_prompt.clone()).await?;
+        let inference_response_tx = inference_response_tx.clone();
+        inference_response_tx
+            .send(
+                ChatAreaAppendMessage {
+                    message: user_prompt,
+                }
+                .to_string(),
+            )
+            .await?;
     }
 
     let params = OllamaChatParams {
@@ -174,15 +178,26 @@ async fn inference(
         .map(|chunk| serde_json::from_slice::<OllamaChatResponseStream>(&chunk));
 
     let mut assistant_response = models::Message::assistant("".to_string(), conversation_id);
+    inference_response_tx
+        .send(
+            ChatAreaAppendMessage {
+                message: assistant_response.clone(),
+            }
+            .to_string(),
+        )
+        .await?;
 
     while let Some(chunk) = stream.next().await {
         if let Ok(chunk) = chunk {
             assistant_response.update_content(&chunk.message.content);
 
-            let assistant_response_chunk =
-                models::Message::assistant(chunk.message.content, conversation_id);
             if inference_response_tx
-                .send(assistant_response_chunk)
+                .send(
+                    ChatAreaSwapMessage {
+                        message: assistant_response.clone(),
+                    }
+                    .to_string(),
+                )
                 .await
                 .is_err()
             {

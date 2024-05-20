@@ -6,13 +6,29 @@
         ws-connect="/ws"
         class="flex flex-col w-full px-10 place-content-center place-items-center"
     >
+        <!-- TODO: don't submit if the content is empty -->
+        <!-- TODO: listen to htmx:wsMessage event and enable button again -->
         <form
             id="user-prompt-form"
             class="relative flex flex-1 flex-row h-full w-3/4 items-stretch text-white"
             ws-send
-            _="on submit
+            _="
+            on submit
                 set #user-prompt-ta.value to ''
-                then add @disabled to #user-prompt-btn"
+                then set #user-prompt-ta's *height to 24 px
+                then add @disabled to #user-prompt-btn
+            on keyup from #user-prompt-ta
+                if event.keyCode is 13 and not event.shiftKey
+                    event.preventDefault()
+                    set text to #user-prompt-ta.value
+                    js(text)
+                        return text.trim()
+                    end
+                    set #user-prompt-ta.value to it
+                    then trigger submit on me
+                otherwise
+                    halt the event
+            "
         >
             <div
                 class="flex flex-col w-full py-2 flex-grow border border-gray-900/50 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"

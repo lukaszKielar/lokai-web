@@ -1,7 +1,7 @@
 <!-- prettier-ignore -->
 {% extends "index.html" %}
 {% block messages %}
-<div id="conversation-messages">
+<div id="conversation-messages" class="w-full">
     <!-- prettier-ignore -->
     {% for message in messages %}
         {% include "chat_area/message.html" %}

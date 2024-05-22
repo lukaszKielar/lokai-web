@@ -18,13 +18,20 @@
                             <div
                                 class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
                             >
-                                Model: <b>model</b>, Server: serverState
+                                Model: <b>model</b>, Server:
+                                <p id="server-state">...</p>
                             </div>
-                            <!-- TODO: create two different views: index, chat by extending this template -->
                             {% block messages %}{% endblock %}
                             <div class="w-full h-32 flex-shrink-0"></div>
-                            <!-- TODO: Remove all node_ref -->
-                            <div node_ref="bottom_of_chat_div"></div>
+                            <div
+                                id="bottom-of-msgs"
+                                _="
+                                on htmx:wsAfterMessage from #user-prompt-div or load
+                                    js(me)
+                                        me.scrollIntoView(true);
+                                    end
+                                "
+                            ></div>
                         </div>
                         <div
                             class="flex flex-col items-center text-sm bg-gray-800"

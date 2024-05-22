@@ -2,16 +2,22 @@
     class="absolute bottom-0 left-0 w-full border-t border-transparent bg-vert-light-gradient !bg-transparent bg-vert-dark-gradient pt-2 flex flex-col"
 >
     <div
+        id="user-prompt-div"
         hx-ext="ws"
         ws-connect="/ws"
         class="flex flex-col w-full px-10 place-content-center place-items-center"
+        _="
+        on htmx:wsOpen
+            set #server-state's innerText to 'connected!'
+        "
     >
-        <!-- TODO: don't submit if the content is empty -->
-        <!-- TODO: listen to htmx:wsMessage event and enable button again -->
+        <!-- TODO: define helper function for resetting height of textarea -->
+        <!-- TODO: it might be easier to write JS function for handling submit -->
         <form
             id="user-prompt-form"
             class="relative flex flex-1 flex-row h-full w-3/4 items-stretch text-white"
             ws-send
+            hx-disabled-elt="input, button"
             _="
             on submit
                 set #user-prompt-ta.value to ''
@@ -19,13 +25,18 @@
                 then add @disabled to #user-prompt-btn
             on keyup from #user-prompt-ta
                 if event.keyCode is 13 and not event.shiftKey
-                    event.preventDefault()
                     set text to #user-prompt-ta.value
                     js(text)
                         return text.trim()
                     end
                     set #user-prompt-ta.value to it
-                    then trigger submit on me
+                    if #user-prompt-ta.value === ''
+                        halt the event
+                        then set #user-prompt-ta's *height to 24 px
+                        then add @disabled to #user-prompt-btn
+                    otherwise
+                        trigger submit on me
+                    end
                 otherwise
                     halt the event
             "
@@ -33,8 +44,8 @@
             <div
                 class="flex flex-col w-full py-2 flex-grow border border-gray-900/50 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
             >
-                <!-- TODO: I need to enable button not only when the input is empty, but also when htmx:afterSettle-->
-                <!-- TODO: implement nice focus -->
+                <!-- TODO: show red ring on empty prompt submit attempt -->
+                <!-- TODO: show blue ring on focus -->
                 <textarea
                     id="user-prompt-ta"
                     name="user_prompt"

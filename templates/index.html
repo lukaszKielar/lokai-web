@@ -8,35 +8,30 @@
             class="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1"
         >
             <div class="flex-1 overflow-hidden">
-                <div
-                    class="scroll-to-bottom--css-ikyem-79elbk h-full bg-gray-800"
-                >
-                    <div class="scroll-to-bottom--css-ikyem-1n7m0yu">
+                <div class="h-full bg-gray-800">
+                    <div class="flex flex-col items-center text-sm bg-gray-800">
+                        <!-- TODO: keep this div on top of conversation messages -->
                         <div
-                            class="flex flex-col items-center text-sm bg-gray-800"
+                            class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
                         >
-                            <div
-                                class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
-                            >
-                                Model: <b>model</b>, Server:
-                                <p id="server-state">...</p>
-                            </div>
-                            {% block messages %}{% endblock %}
-                            <div class="w-full h-32 flex-shrink-0"></div>
-                            <div
-                                id="bottom-of-msgs"
-                                _="
+                            Model: <b>model</b>, Server:
+                            <p id="server-state">...</p>
+                        </div>
+                        {% block messages %}{% endblock %}
+                        <div class="w-full h-32 flex-shrink-0"></div>
+                        <div
+                            id="bottom-of-msgs"
+                            _="
                                 on htmx:wsAfterMessage from #user-prompt-div or load
                                     js(me)
                                         me.scrollIntoView(true);
                                     end
                                 "
-                            ></div>
-                        </div>
-                        <div
-                            class="flex flex-col items-center text-sm bg-gray-800"
                         ></div>
                     </div>
+                    <div
+                        class="flex flex-col items-center text-sm bg-gray-800"
+                    ></div>
                 </div>
             </div>
             {% include "chat_area/prompt.html" %}

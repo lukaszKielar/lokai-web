@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-    html {
-        @apply scroll-smooth;
-    }
-}
-
 :root {
     --foreground-rgb: 0, 0, 0;
     --background-start-rgb: 214, 219, 220;
@@ -25,16 +19,6 @@
 
 body {
     height: 100%;
-}
-
-.scroll-to-bottom--css-uzqrz-79elbk {
-    position: relative;
-}
-
-.scroll-to-bottom--css-ikyem-1n7m0yu {
-    height: 100%;
-    overflow-y: auto;
-    width: 100%;
 }
 
 textarea:focus {

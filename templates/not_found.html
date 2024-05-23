@@ -1,0 +1,20 @@
+<!-- prettier-ignore -->
+{% extends "_base.html" %}
+{% block main %}
+<main
+    class="grid w-screen h-screen place-items-center px-6 py-24 bg-gray-800 text-gray-100"
+>
+    <div class="text-center">
+        <h1 class="mt-4 text-9xl font-bold tracking-tight">404</h1>
+        <p class="mt-4 text-xl tracking-tight">Page Not Found</p>
+        <div class="mt-4 flex items-center justify-center gap-x-6">
+            <a
+                href="/"
+                class="flex justify-center h-8 w-16 rounded-md bg-gray-600 m-1 border-gray-900/50 text-gray-300 hover:bg-gray-700"
+            >
+                <button class="btn">Home</button>
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}

@@ -14,6 +14,7 @@ pub async fn get_conversation_messages(
 SELECT *
 FROM messages
 WHERE conversation_id = ?
+ORDER BY created_at ASC
         "#,
     )
     .bind(conversation_id)
@@ -77,6 +78,7 @@ pub async fn get_conversations(sqlite: SqlitePool) -> Result<Vec<Conversation>> 
         r#"
 SELECT *
 FROM conversations
+ORDER BY created_at ASC
         "#,
     )
     .fetch_all(&sqlite)

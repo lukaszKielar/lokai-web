@@ -1,0 +1,105 @@
+<div
+    class="absolute bottom-0 left-0 w-full border-t border-transparent bg-vert-light-gradient !bg-transparent bg-vert-dark-gradient pt-2 flex flex-col"
+>
+    <div
+        id="user-prompt-div"
+        hx-ext="ws"
+        ws-connect="/ws"
+        class="flex flex-col w-full px-10 place-content-center place-items-center"
+        _="
+        on htmx:wsOpen
+            set #server-state's innerText to 'connected!'
+        "
+    >
+        <!-- TODO: define helper function for resetting height of textarea -->
+        <!-- TODO: it might be easier to write JS function for handling submit -->
+        <form
+            id="user-prompt-form"
+            class="relative flex flex-1 flex-row h-full w-3/4 items-stretch text-white"
+            ws-send
+            hx-disabled-elt="input, button"
+            _="
+            on submit
+                set #user-prompt-ta.value to ''
+                then set #user-prompt-ta's *height to 24 px
+                then add @disabled to #user-prompt-btn
+            on keyup from #user-prompt-ta
+                if event.keyCode is 13 and not event.shiftKey
+                    set text to #user-prompt-ta.value
+                    js(text)
+                        return text.trim()
+                    end
+                    set #user-prompt-ta.value to it
+                    if #user-prompt-ta.value === ''
+                        halt the event
+                        then set #user-prompt-ta's *height to 24 px
+                        then add @disabled to #user-prompt-btn
+                    otherwise
+                        trigger submit on me
+                    end
+                otherwise
+                    halt the event
+            "
+        >
+            <div
+                class="flex flex-col w-full py-2 flex-grow border border-gray-900/50 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
+            >
+                <!-- TODO: show red ring on empty prompt submit attempt -->
+                <!-- TODO: show blue ring on focus -->
+                <!-- TODO: define tabindex -->
+                <textarea
+                    id="user-prompt-ta"
+                    name="user_prompt"
+                    type="text"
+                    placeholder="Message LokAI..."
+                    class="m-0 w-full resize-none border-0 p-0 pr-10 bg-transparent pl-2 h-[24px] max-h-[216px] overflow-y-auto"
+                    _="
+                    on input
+                        set *height to 24 px
+                        then measure my scrollHeight
+                        if scrollHeight > 216
+                            set *height to 216 px
+                        else
+                            set *height to scrollHeight px
+                        end
+                        if my value === ''
+                            add @disabled to #user-prompt-btn
+                        else
+                            remove @disabled from #user-prompt-btn
+                        end
+                    "
+                ></textarea>
+            </div>
+            <div class="absolute flex flex-1 bottom-0 right-0 p-1">
+                <button
+                    id="user-prompt-btn"
+                    class="p-1 rounded-md bg-transparent disabled:bg-gray-500 disabled:opacity-40"
+                    disabled
+                    type="submit"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-send"
+                    >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M10 14l11 -11" />
+                        <path
+                            d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5"
+                        />
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="text-center text-xs text-white/50 p-2 w-full">
+        <span>Enjoy your self-hosted LokAI!</span>
+    </div>
+</div>

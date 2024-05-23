@@ -2,10 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::{Message, Role};
 
-pub fn default_model() -> String {
-    "phi3:3.8b".to_string()
-}
-
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OllamaMessage {
     pub role: Role,
@@ -32,11 +28,9 @@ pub struct OllamaChatResponseStream {
     pub done: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Serialize, Debug)]
 pub struct OllamaChatParams {
-    #[serde(default = "default_model")]
     pub model: String,
     pub messages: Vec<OllamaMessage>,
-    #[serde(default)]
     pub stream: bool,
 }

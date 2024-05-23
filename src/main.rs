@@ -15,16 +15,21 @@ use crate::ws::websocket;
 use axum::handler::Handler;
 use axum::routing::get;
 use axum::Router;
+use lazy_static::lazy_static;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 use std::env;
 use tower_http::services::{ServeDir, ServeFile};
 use tracing::info;
 
+lazy_static! {
+    pub static ref LOKAI_DEFAULT_LLM_MODEL: String = "phi3:3.8b".to_string();
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_env_filter("lokai=debug")
+        .with_env_filter("lokai=info")
         .with_target(false)
         .with_level(true)
         .init();
@@ -34,8 +39,6 @@ async fn main() -> Result<()> {
         .connect(&db_url)
         .await
         .expect("Could not make pool.");
-
-    // create_data(sqlite.clone()).await;
 
     let state = AppState {
         sqlite: sqlite,
@@ -65,34 +68,4 @@ async fn main() -> Result<()> {
         .expect("Cannot start server");
 
     Ok(())
-}
-
-async fn create_data(sqlite: SqlitePool) {
-    {
-        let sqlite = sqlite.clone();
-        let conversation = models::Conversation::new("conversation 1".to_string());
-        db::create_conversation(sqlite.clone(), conversation.clone())
-            .await
-            .unwrap();
-        db::create_message(
-            sqlite.clone(),
-            models::Message::user("why is the sky blue?".to_string(), conversation.id.clone()),
-        )
-        .await
-        .unwrap();
-        db::create_message(
-            sqlite.clone(),
-            models::Message::assistant(
-                "it's not blue, it's red!!".to_string(),
-                conversation.id.clone(),
-            ),
-        )
-        .await
-        .unwrap();
-    }
-    for i in 2..=20 {
-        let sqlite = sqlite.clone();
-        let conversation = models::Conversation::new(format!("conversation {i}"));
-        db::create_conversation(sqlite, conversation).await.unwrap();
-    }
 }

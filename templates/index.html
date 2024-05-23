@@ -13,11 +13,14 @@
                         <div
                             class="flex flex-col items-center text-sm bg-gray-800"
                         >
-                            <!-- TODO: keep this div on top of conversation messages -->
+                            <!-- TODO: keep this div on top of conversation's messages -->
                             <div
                                 class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
                             >
-                                Model: <b>model</b>, Server:
+                                Model:
+                                <!-- prettier-ignore -->
+                                <b>{{ crate::LOKAI_DEFAULT_LLM_MODEL.to_string() }}</b>
+                                Server:
                                 <p id="server-state">...</p>
                             </div>
                             {% block messages %}{% endblock %}

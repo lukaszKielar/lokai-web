@@ -13,7 +13,8 @@ use crate::{
     db,
     error::Result,
     frontend::templates::{ChatAreaAppendMessage, ChatAreaSwapMessage},
-    ollama::{default_model, OllamaChatParams, OllamaChatResponseStream},
+    ollama::{OllamaChatParams, OllamaChatResponseStream},
+    LOKAI_DEFAULT_LLM_MODEL,
 };
 use crate::{models, state::AppState};
 
@@ -128,6 +129,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
     debug!("finished handling a socket");
 }
 
+// TODO: pass the name of the model used for the inference
 async fn inference(
     user_prompt: models::Message,
     inference_response_tx: mpsc::Sender<String>,
@@ -163,7 +165,7 @@ async fn inference(
     }
 
     let params = OllamaChatParams {
-        model: default_model(),
+        model: LOKAI_DEFAULT_LLM_MODEL.to_string(),
         messages: messages.into_iter().map(|m| m.into()).collect(),
         stream: true,
     };

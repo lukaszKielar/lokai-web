@@ -1,6 +1,0 @@
-max_width = 100
-tab_spaces = 4
-indentation_style = "Spaces"
-newline_style = "Unix"
-attr_value_brace_style = "AlwaysUnlessLit"
-macro_names = ["leptos::view, view"]

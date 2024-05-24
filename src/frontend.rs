@@ -1,3 +1,4 @@
+// TODO: handle errors by implementing intoresponse for my db error
 pub(crate) mod templates {
     use askama::Template;
 
@@ -31,6 +32,16 @@ pub(crate) mod templates {
     pub(crate) struct ChatAreaSwapMessage {
         pub message: models::Message,
     }
+
+    #[derive(Template)]
+    #[template(path = "sidebar/new_conversation_form.html")]
+    pub(crate) struct SidebarNewConversationForm;
+
+    #[derive(Template)]
+    #[template(path = "sidebar/conversation.html")]
+    pub(crate) struct SidebarConversation {
+        pub conversation: models::Conversation,
+    }
 }
 
 pub mod handlers {
@@ -39,10 +50,14 @@ pub mod handlers {
     use axum::{
         extract::{Path, State},
         response::{Redirect, Response},
+        Form,
     };
+    use http::{HeaderMap, HeaderValue};
+    use serde::Deserialize;
+    use sqlx::SqlitePool;
     use uuid::Uuid;
 
-    use crate::{db, state::AppState};
+    use crate::{db, models, state::AppState};
 
     pub async fn index(state: State<AppState>) -> impl IntoResponse {
         let conversations = db::get_conversations(state.sqlite.clone()).await.unwrap();
@@ -50,7 +65,7 @@ pub mod handlers {
     }
 
     pub async fn conversation(
-        state: State<AppState>,
+        State(sqlite): State<SqlitePool>,
         Path(conversation_id): Path<String>,
     ) -> Response {
         let conversation_id = match Uuid::parse_str(&conversation_id) {
@@ -58,7 +73,7 @@ pub mod handlers {
             Err(_) => return Redirect::permanent("/not_found").into_response(),
         };
 
-        let conversations = db::get_conversations(state.sqlite.clone()).await.unwrap();
+        let conversations = db::get_conversations(sqlite.clone()).await.unwrap();
         if !conversations
             .iter()
             .map(|c| c.id)
@@ -68,7 +83,7 @@ pub mod handlers {
             return Redirect::permanent("/not_found").into_response();
         }
 
-        let messages = db::get_conversation_messages(state.sqlite.clone(), conversation_id)
+        let messages = db::get_conversation_messages(sqlite, conversation_id)
             .await
             .unwrap();
 
@@ -81,5 +96,39 @@ pub mod handlers {
 
     pub async fn not_found() -> impl IntoResponse {
         NotFound
+    }
+
+    pub async fn sidebar_new_conversation_form() -> impl IntoResponse {
+        SidebarNewConversationForm
+    }
+
+    // TODO: add validation, e.g. cannot be empty string
+    #[derive(Deserialize, Debug)]
+    pub struct NewConversationForm {
+        pub conversation_name: String,
+    }
+
+    pub async fn create_conversation(
+        State(sqlite): State<SqlitePool>,
+        Form(new_conversation_form): Form<NewConversationForm>,
+    ) -> impl IntoResponse {
+        let new_conversation = models::Conversation::new(new_conversation_form.conversation_name);
+        // TODO: implement into response for my error
+        let new_conversation = db::create_conversation(sqlite, new_conversation)
+            .await
+            .unwrap();
+
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "HX-Redirect",
+            HeaderValue::from_str(&format!("/c/{:?}", &new_conversation.id)).unwrap(),
+        );
+
+        (
+            headers,
+            SidebarConversation {
+                conversation: new_conversation,
+            },
+        )
     }
 }

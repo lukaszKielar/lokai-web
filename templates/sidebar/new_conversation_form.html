@@ -1,0 +1,70 @@
+<div
+    class="flex flex-col pb-2 text-gray-100 text-sm w-full"
+    id="new-conversation-div-swap"
+>
+    <!-- TODO: remove href attribute for active conversation -->
+    <div
+        class="flex p-3 gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all hover:pr-4 group w-full"
+    >
+        <div class="flex flex-row gap-2 items-center w-full">
+            <!-- TODO: create templates for icons -->
+            <div class="flex w-[24px]">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-message"
+                >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M8 9h8" />
+                    <path d="M8 13h6" />
+                    <path
+                        d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12z"
+                    />
+                </svg>
+            </div>
+            <div
+                class="flex content-center justify-start relative w-[calc(100%-32px)]"
+            >
+                <form
+                    hx-post="/api/conversations"
+                    hx-target="#new-conversation-div-swap"
+                    hx-swap="outerHTML"
+                    class="w-full"
+                    _="
+            on keyup from #new-conversation-input
+                event.preventDefault()
+                if event.keyCode is 13
+                    set text to #new-conversation-input.value
+                    js(text)
+                        return text.trim()
+                    end
+                    set #new-conversation-input.value to it
+                    if #new-conversation-input.value === ''
+                        halt the event
+                    otherwise
+                        trigger submit on me
+                    end
+                otherwise
+                    halt the event
+            "
+                >
+                    <input
+                        id="new-conversation-input"
+                        type="text"
+                        name="conversation_name"
+                        placeholder="Enter name of your conversation"
+                        autofocus="autofocus"
+                        class="w-full text-gray-700"
+                    />
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

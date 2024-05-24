@@ -8,12 +8,14 @@ mod state;
 mod ws;
 
 use crate::error::Result;
-use crate::frontend::handlers::{conversation, index, not_found};
+use crate::frontend::handlers::{
+    conversation, create_conversation, index, not_found, sidebar_new_conversation_form,
+};
 use crate::state::AppState;
 use crate::ws::websocket;
 
 use axum::handler::Handler;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use lazy_static::lazy_static;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -45,10 +47,15 @@ async fn main() -> Result<()> {
         reqwest_client: reqwest::Client::new(),
     };
 
+    let api_router = Router::new()
+        .route("/conversations/form", get(sidebar_new_conversation_form))
+        .route("/conversations", post(create_conversation));
+
     let app = Router::new()
         .route("/", get(index))
         .route("/c/:id", get(conversation))
         .route("/ws", get(websocket))
+        .nest("/api", api_router)
         .nest_service("/robots.txt", ServeFile::new("static/robots.txt"))
         .nest_service(
             "/static",

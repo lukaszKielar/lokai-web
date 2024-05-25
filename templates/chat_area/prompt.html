@@ -46,12 +46,13 @@
             >
                 <!-- TODO: show red ring on empty prompt submit attempt -->
                 <!-- TODO: show blue ring on focus -->
-                <!-- TODO: define tabindex -->
                 <textarea
                     id="user-prompt-ta"
                     name="user_prompt"
                     type="text"
                     placeholder="Message LokAI..."
+                    autofocus="autofocus"
+                    required
                     class="m-0 w-full resize-none border-0 p-0 pr-10 bg-transparent pl-2 h-[24px] max-h-[216px] overflow-y-auto"
                     _="
                     on input

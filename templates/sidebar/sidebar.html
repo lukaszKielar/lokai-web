@@ -3,8 +3,11 @@
 >
     <div class="flex flex-1 h-full w-full items-start">
         <nav class="flex flex-1 flex-col space-y-1 p-2 h-full w-full">
-            <a
-                href="/"
+            <button
+                hx-trigger="click"
+                hx-get="/api/conversations/form"
+                hx-target="#sidebar-conversations-div"
+                hx-swap="beforeend"
                 class="flex py-3 px-3 items-center gap-3 rounded-md hover:bg-gray-500/10 transition-colors duration-200 text-white cursor-pointer text-sm mb-1 flex-shrink-0 border border-white/20 w-full"
             >
                 <svg
@@ -24,8 +27,9 @@
                     <path d="M5 12l14 0" />
                 </svg>
                 New chat
-            </a>
+            </button>
             <div
+                id="sidebar-conversations-div"
                 class="flex-col flex-1 overflow-y-auto border-b border-white/20 w-full"
             >
                 <!-- prettier-ignore -->

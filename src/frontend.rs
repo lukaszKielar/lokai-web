@@ -48,13 +48,15 @@ pub mod handlers {
     use super::templates::*;
     use askama_axum::IntoResponse;
     use axum::{
+        body::Body,
         extract::{Path, State},
         response::{Redirect, Response},
         Form,
     };
-    use http::{HeaderMap, HeaderValue};
+    use http::{HeaderMap, HeaderValue, StatusCode};
     use serde::Deserialize;
     use sqlx::SqlitePool;
+    use tracing::error;
     use uuid::Uuid;
 
     use crate::{db, models, state::AppState};
@@ -130,5 +132,21 @@ pub mod handlers {
                 conversation: new_conversation,
             },
         )
+    }
+
+    pub async fn delete_conversation(
+        State(sqlite): State<SqlitePool>,
+        Path(conversation_id): Path<Uuid>,
+    ) -> Response {
+        match db::delete_conversation(sqlite, conversation_id).await {
+            Ok(_) => Body::empty().into_response(),
+            Err(err) => {
+                error!(
+                    conversation_id = conversation_id.to_string(),
+                    "Error when deleting conversation: {:?}", err
+                );
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        }
     }
 }

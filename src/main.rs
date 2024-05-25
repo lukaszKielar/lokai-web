@@ -8,14 +8,12 @@ mod state;
 mod ws;
 
 use crate::error::Result;
-use crate::frontend::handlers::{
-    conversation, create_conversation, index, not_found, sidebar_new_conversation_form,
-};
+use crate::frontend::handlers;
 use crate::state::AppState;
 use crate::ws::websocket;
 
 use axum::handler::Handler;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 use lazy_static::lazy_static;
 use sqlx::sqlite::SqlitePoolOptions;
@@ -48,20 +46,25 @@ async fn main() -> Result<()> {
     };
 
     let api_router = Router::new()
-        .route("/conversations/form", get(sidebar_new_conversation_form))
-        .route("/conversations", post(create_conversation));
+        .route(
+            "/conversations/form",
+            get(handlers::sidebar_new_conversation_form),
+        )
+        .route("/conversations", post(handlers::create_conversation))
+        .route("/conversations/:id", delete(handlers::delete_conversation));
 
     let app = Router::new()
-        .route("/", get(index))
-        .route("/c/:id", get(conversation))
+        .route("/", get(handlers::index))
+        .route("/c/:id", get(handlers::conversation))
         .route("/ws", get(websocket))
         .nest("/api", api_router)
         .nest_service("/robots.txt", ServeFile::new("static/robots.txt"))
         .nest_service(
             "/static",
-            ServeDir::new("static").not_found_service(not_found.with_state(state.clone())),
+            ServeDir::new("static")
+                .not_found_service(handlers::not_found.with_state(state.clone())),
         )
-        .fallback(not_found)
+        .fallback(handlers::not_found)
         .with_state(state);
 
     // TODO: use ENV VAR to define the address

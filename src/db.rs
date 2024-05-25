@@ -132,6 +132,44 @@ pub async fn create_conversation_if_not_exists(
     }
 }
 
+pub async fn delete_conversation(
+    sqlite: SqlitePool,
+    conversation_id: Uuid,
+) -> Result<Option<Conversation>> {
+    debug!(
+        conversation_id = conversation_id.to_string(),
+        "deleting conversation from db"
+    );
+
+    let maybe_conversation: Option<Conversation> = sqlx::query_as(
+        r#"
+        DELETE FROM conversations
+        WHERE id = ?1
+        RETURNING *
+        "#,
+    )
+    .bind(conversation_id)
+    .fetch_optional(&sqlite)
+    .await?;
+
+    match maybe_conversation {
+        Some(conversation) => {
+            debug!(
+                conversation_id = conversation_id.to_string(),
+                "conversation deleted from db"
+            );
+            Ok(Some(conversation))
+        }
+        None => {
+            debug!(
+                conversation_id = conversation_id.to_string(),
+                "conversation not found"
+            );
+            Ok(None)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::models::Role;
@@ -252,6 +290,40 @@ mod tests {
 
         // then:
         assert_eq!(table_count(pool, "conversations").await?, 1);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn test_delete_conversation_which_exist_ok(pool: sqlx::SqlitePool) -> Result<()> {
+        // given:
+        let conversation = Conversation::new("test".to_string());
+        let _ = create_conversation(pool.clone(), conversation.clone()).await?;
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+
+        // when:
+        let maybe_deleted_conversation =
+            delete_conversation(pool.clone(), conversation.id.clone()).await?;
+
+        // then:
+        assert_eq!(table_count(pool, "conversations").await?, 0);
+        assert!(maybe_deleted_conversation.is_some());
+        assert_eq!(conversation, maybe_deleted_conversation.unwrap());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn test_delete_conversation_which_doesnt_exist_ok(pool: sqlx::SqlitePool) -> Result<()> {
+        // given:
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+
+        // when:
+        let maybe_deleted_conversation = delete_conversation(pool.clone(), Uuid::new_v4()).await?;
+
+        // then:
+        assert_eq!(table_count(pool, "conversations").await?, 0);
+        assert!(maybe_deleted_conversation.is_none());
 
         Ok(())
     }

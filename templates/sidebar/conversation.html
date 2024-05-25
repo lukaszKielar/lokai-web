@@ -2,10 +2,10 @@
     <!-- TODO: remove href attribute for active conversation -->
     <a
         href="/c/{{- conversation.id -}}"
-        class="flex p-3 gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all hover:pr-4 group w-full"
+        class="flex p-3 gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all group w-full"
     >
         <div class="flex flex-row gap-2 items-center w-full">
-            <div class="flex w-[24px]">
+            <div class="flex-none w-[24px]">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -28,10 +28,32 @@
             </div>
             <div
                 id="c-{{- conversation.id -}}"
-                class="flex content-center justify-start relative w-[calc(100%-32px)]"
+                class="flex-auto w-1 content-center justify-start relative"
             >
-                <div class="truncate">{{- conversation.name -}}</div>
+                <div class="truncate w-full">{{- conversation.name -}}</div>
             </div>
+            <button
+                class="flex-none w-[24px] hover:text-white hover:bg-gray-600 hover:rounded-md"
+                _="on click event.preventDefault()"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-dots"
+                >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                    <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                    <path d="M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                </svg>
+            </button>
         </div>
     </a>
 </div>

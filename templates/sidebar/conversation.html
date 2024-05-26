@@ -2,10 +2,25 @@
     id="c-{{- conversation.id -}}"
     class="flex flex-col pb-2 text-gray-100 text-sm w-full"
 >
-    <!-- TODO: remove href attribute for active conversation -->
     <a
         href="/c/{{- conversation.id -}}"
-        class="flex p-3 gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all group w-full"
+        class="flex p-3 gap-3 relative rounded-md hover:bg-gray-700 cursor-pointer break-all group w-full"
+        _="
+        on load
+            set :active to false
+            js
+                let currentPathname = window.location.pathname;
+                let currentConversationId = currentPathname.split('/').slice(-1)[0];
+                return currentConversationId === '{{- conversation.id -}}'
+            end
+            set :active to it
+            if :active
+                remove @href from me
+                then add .bg-gray-700 to me
+                then remove .cursor-pointer from me
+            end
+            then log :active
+        "
     >
         <div class="flex flex-row gap-2 items-center w-full">
             <div class="flex-none w-[24px]">
@@ -32,11 +47,13 @@
             <div class="flex-auto w-1 content-center justify-start relative">
                 <div class="truncate w-full">{{- conversation.name -}}</div>
             </div>
+            <!-- TODO: redirect to a different page when conversation is removed -->
             <button
                 class="flex-none w-[24px] hover:text-white hover:bg-gray-600 hover:rounded-md relative"
                 hx-delete="/api/conversations/{{- conversation.id -}}"
                 hx-target="#c-{{- conversation.id -}}"
                 hx-swap="outerHTML"
+                hx-confirm="Do you really want to delete conversation?"
                 _="
                 on click
                     event.preventDefault()

@@ -1,45 +1,35 @@
 <!-- prettier-ignore -->
 {% extends "_base.html" %}
 {% block main %}
-<div class="overflow-hidden w-full h-screen relative flex">
+<div class="flex flex-row size-full">
     {%- include "sidebar/sidebar.html" -%}
-    <div class="flex max-w-full flex-1 flex-col">
-        <div
-            class="relative h-full w-full transition-width flex flex-col overflow-hidden items-stretch flex-1"
-        >
-            <div class="flex-1 overflow-hidden">
-                <div class="relative h-full dark:bg-gray-800">
-                    <div class="h-full w-full overflow-y-auto">
-                        <div
-                            class="flex flex-col items-center text-sm bg-gray-800"
-                        >
-                            <!-- TODO: keep this div on top of conversation's messages -->
-                            <div
-                                class="flex w-full items-center justify-center gap-1 border-b p-3 border-gray-900/50 bg-gray-700 text-gray-300"
-                            >
-                                Model:
-                                <!-- prettier-ignore -->
-                                <b>{{ crate::LOKAI_DEFAULT_LLM_MODEL.to_string() }}</b>
-                                Server:
-                                <p id="server-state">...</p>
-                            </div>
-                            {% block messages %}{% endblock %}
-                            <div class="w-full h-32 flex-shrink-0"></div>
-                            <div
-                                id="bottom-of-msgs"
-                                _="
+    <div class="flex flex-1 h-screen w-3/4 top-0 right-0">
+        <div class="flex flex-col flex-1 transition-width relative bg-gray-800">
+            <!-- TODO: scroll to bottom when the prompt expands -->
+            <div
+                class="flex flex-col w-full items-center text-sm overflow-y-auto"
+            >
+                <!-- TODO: keep this div on top of conversation's messages -->
+                <div
+                    class="flex flex-row w-full items-center justify-center p-3 gap-1 text-gray-300 bg-gray-900"
+                >
+                    Model:
+                    <!-- prettier-ignore -->
+                    <b>{{ crate::LOKAI_DEFAULT_LLM_MODEL.to_string() }}</b>
+                    Server:
+                    <p id="server-state">...</p>
+                </div>
+                {% block messages %}{% endblock %}
+                <div class="w-full h-32 flex-shrink-0"></div>
+                <div
+                    id="bottom-of-msgs"
+                    _="
                                 on htmx:wsAfterMessage from #user-prompt-div or load
                                     js(me)
                                         me.scrollIntoView(true);
                                     end
                                 "
-                            ></div>
-                        </div>
-                        <div
-                            class="flex flex-col items-center text-sm bg-gray-800"
-                        ></div>
-                    </div>
-                </div>
+                ></div>
             </div>
             {% include "chat_area/prompt.html" %}
         </div>

@@ -1,3 +1,4 @@
+// TODO: check what exactly tailwind offers
 /** @type {import('tailwindcss').Config} */
 module.exports = {
     content: ["./templates/**/*.html", "./src/**/*.rs"],

@@ -7,4 +7,8 @@
     .sidebar-button {
         @apply flex flex-row w-full p-3 gap-3 rounded-lg hover:bg-gray-700 text-left items-center transition-colors duration-200 text-white text-sm;
     }
+
+    .chat-area-msg {
+        @apply w-full text-gray-100 border-b border-gray-900/50;
+    }
 }

@@ -3,7 +3,7 @@
 {% block main %}
 <div class="flex flex-row size-full">
     {%- include "sidebar/sidebar.html" -%}
-    <div class="flex flex-1 h-screen w-3/4 top-0 right-0">
+    <div class="flex flex-1 h-screen top-0 right-0">
         <div class="flex flex-col flex-1 transition-width relative bg-gray-800">
             <!-- TODO: scroll to bottom when the prompt expands -->
             <div
@@ -24,11 +24,11 @@
                 <div
                     id="bottom-of-msgs"
                     _="
-                                on htmx:wsAfterMessage from #user-prompt-div or load
-                                    js(me)
-                                        me.scrollIntoView(true);
-                                    end
-                                "
+                    on htmx:wsAfterMessage from #user-prompt-div or load
+                        js(me)
+                            me.scrollIntoView(true);
+                        end
+                    "
                 ></div>
             </div>
             {% include "chat_area/prompt.html" %}

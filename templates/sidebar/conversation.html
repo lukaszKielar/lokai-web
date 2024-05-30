@@ -1,10 +1,7 @@
-<div
-    id="c-{{- conversation.id -}}"
-    class="flex flex-col pb-2 text-gray-100 text-sm w-full"
->
+<div id="c-{{- conversation.id -}}" class="flex flex-col pb-2 w-full">
     <a
         href="/c/{{- conversation.id -}}"
-        class="flex p-3 gap-3 relative rounded-md hover:bg-gray-700 cursor-pointer break-all group w-full"
+        class="sidebar-button cursor-pointer"
         _="
         on load
             set :active to false
@@ -19,11 +16,11 @@
                 then add .bg-gray-700 to me
                 then remove .cursor-pointer from me
             end
-            then log :active
         "
     >
         <div class="flex flex-row gap-2 items-center w-full">
-            <div class="flex-none w-[24px]">
+            <!-- TODO: find a way to scale svg with parent element -->
+            <div class="flex-none size-6">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -49,7 +46,7 @@
             </div>
             <!-- TODO: redirect to a different page when conversation is removed -->
             <button
-                class="flex-none w-[24px] hover:text-white hover:bg-gray-600 hover:rounded-md relative"
+                class="flex-none size-6 hover:text-red-600"
                 hx-delete="/api/conversations/{{- conversation.id -}}"
                 hx-target="#c-{{- conversation.id -}}"
                 hx-swap="outerHTML"

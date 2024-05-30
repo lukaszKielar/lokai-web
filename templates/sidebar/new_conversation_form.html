@@ -1,14 +1,8 @@
-<!-- TODO: remove entire div when esc key is pressed -->
-<div
-    class="flex flex-col pb-2 text-gray-100 text-sm w-full"
-    id="new-conversation-div-swap"
->
-    <div
-        class="flex p-3 gap-3 relative rounded-md hover:bg-[#2A2B32] cursor-pointer break-all hover:pr-4 group w-full"
-    >
+<div class="flex flex-col pb-2 w-full" id="new-conversation-form">
+    <div class="sidebar-button bg-gray-700">
         <div class="flex flex-row gap-2 items-center w-full">
             <!-- TODO: create templates for icons -->
-            <div class="flex-none w-[24px]">
+            <div class="flex-none size-6">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -29,26 +23,19 @@
                     />
                 </svg>
             </div>
-            <div class="flex-auto w-1 content-center justify-start relative">
+            <div class="flex-auto w-1 content-center justify-start">
                 <form
                     hx-post="/api/conversations"
-                    hx-target="#new-conversation-div-swap"
+                    hx-target="#new-conversation-form"
                     hx-swap="outerHTML"
                     class="w-full"
                     _="
                     on keyup from #new-conversation-input
                         event.preventDefault()
-                        if event.keyCode is 13
-                            set text to #new-conversation-input.value
-                            js(text)
-                                return text.trim()
-                            end
-                            set #new-conversation-input.value to it
-                            if #new-conversation-input.value === ''
-                                halt the event
-                            otherwise
-                                trigger submit on me
-                            end
+                        if event.code is 'Enter'
+                            trigger submit on me
+                        else if event.code is 'Escape'
+                            remove #new-conversation-form
                         otherwise
                             halt the event
                     "

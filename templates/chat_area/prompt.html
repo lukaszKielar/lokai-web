@@ -1,11 +1,11 @@
 <div
-    class="absolute bottom-0 left-0 w-full border-t border-transparent bg-vert-light-gradient !bg-transparent bg-vert-dark-gradient pt-2 flex flex-col"
+    class="flex flex-col absolute bottom-0 right-0 w-full bg-gradient-to-b from-transparent to-30% to-gray-800 p-2"
 >
     <div
         id="user-prompt-div"
         hx-ext="ws"
         ws-connect="/ws"
-        class="flex flex-col w-full px-10 place-content-center place-items-center"
+        class="flex flex-col w-full px-10 py-2 place-content-center place-items-center"
         _="
         on htmx:wsOpen
             set #server-state's innerText to 'connected!'
@@ -17,7 +17,7 @@
             id="user-prompt-form"
             class="relative flex flex-1 flex-row h-full w-3/4 items-stretch text-white"
             ws-send
-            hx-disabled-elt="input, button"
+            hx-disabled-elt="textarea, button"
             _="
             on submit
                 set #user-prompt-ta.value to ''
@@ -42,10 +42,12 @@
             "
         >
             <div
-                class="flex flex-col w-full py-2 flex-grow border border-gray-900/50 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
+                class="flex flex-col w-full py-2 flex-grow border border-gray-900/10 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
             >
                 <!-- TODO: show red ring on empty prompt submit attempt -->
                 <!-- TODO: show blue ring on focus -->
+                <!-- Use px notation in Tailwind to make it easier to use correct values in _hyperscript -->
+                <!-- 208px equals 52 units in Tailwind -->
                 <textarea
                     id="user-prompt-ta"
                     name="user_prompt"
@@ -100,7 +102,7 @@
             </div>
         </form>
     </div>
-    <div class="text-center text-xs text-white/50 p-2 w-full">
+    <div class="text-center text-xs text-white/50 p-1 w-full">
         <span>Enjoy your self-hosted LokAI!</span>
     </div>
 </div>

@@ -1,27 +1,14 @@
+/* TODO: check what exactly tailwind offers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    --foreground-rgb: 0, 0, 0;
-    --background-start-rgb: 214, 219, 220;
-    --background-end-rgb: 255, 255, 255;
-    height: 100%;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --foreground-rgb: 255, 255, 255;
-        --background-start-rgb: 0, 0, 0;
-        --background-end-rgb: 0, 0, 0;
+@layer components {
+    .sidebar-button {
+        @apply flex flex-row w-full p-3 gap-3 rounded-lg hover:bg-gray-700 text-left items-center transition-colors duration-200 text-white text-sm;
     }
-}
 
-body {
-    height: 100%;
-}
-
-textarea:focus {
-    outline: none;
-    box-shadow: none;
+    .chat-area-msg {
+        @apply w-full text-gray-100 border-b border-gray-900/50;
+    }
 }

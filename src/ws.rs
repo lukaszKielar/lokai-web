@@ -189,9 +189,18 @@ async fn inference(
         )
         .await?;
 
+    let mut is_first_chunk = true;
     while let Some(chunk) = stream.next().await {
         if let Ok(chunk) = chunk {
-            assistant_response.update_content(&chunk.message.content);
+            let msg_content = &chunk.message.content;
+            let msg_content = if is_first_chunk {
+                is_first_chunk = false;
+                msg_content.trim_start()
+            } else {
+                msg_content
+            };
+
+            assistant_response.update_content(msg_content);
 
             if inference_response_tx
                 .send(

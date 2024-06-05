@@ -171,7 +171,7 @@ async fn inference(
 
     let mut stream = state
         .reqwest_client
-        .post("http://host.docker.internal:11434/api/chat")
+        .post(format!("{}/api/chat", CONFIG.ollama_url))
         .json(&params)
         .send()
         .await?

@@ -18,7 +18,6 @@
                 "mtxr.sqltools",
                 "mtxr.sqltools-driver-sqlite",
                 "oderwat.indent-rainbow",
-                "tabbyml.vscode-tabby",
                 "ms-azuretools.vscode-docker"
             ]
         }

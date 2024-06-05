@@ -94,9 +94,6 @@
         }
     ],
     "sqltools.useNodeRuntime": true,
-    "tabby.api.endpoint": "http://host.docker.internal:8080",
-    "tabby.inlineCompletion.triggerMode": "automatic",
-    "tabby.usage.anonymousUsageTracking": true,
     "tailwindCSS.experimental.classRegex": ["class: \"(.*)\""],
     "tailwindCSS.includeLanguages": {
         "rust": "html"

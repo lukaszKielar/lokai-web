@@ -10,12 +10,13 @@
                 class="flex flex-col w-full items-center text-sm overflow-y-auto"
             >
                 <!-- TODO: keep this div on top of conversation's messages -->
+                <!-- TODO: read model from DB, fallback to default if not defined -->
                 <div
                     class="flex flex-row w-full items-center justify-center p-3 gap-1 text-gray-300 bg-gray-900"
                 >
                     Model:
                     <!-- prettier-ignore -->
-                    <b>{{ crate::LOKAI_DEFAULT_LLM_MODEL.to_string() }}</b>
+                    <b>{{ crate::config::CONFIG.lokai_default_llm_model }}</b>
                     Server:
                     <p id="server-state">...</p>
                 </div>

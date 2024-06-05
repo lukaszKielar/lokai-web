@@ -946,7 +946,7 @@ dependencies = [
  "derive_more",
  "futures-util",
  "http",
- "lazy_static",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",

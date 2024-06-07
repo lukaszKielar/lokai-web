@@ -1,6 +1,6 @@
-use std::{env, sync::OnceLock};
+use std::env;
 
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
 
 fn get_env_var<'a, 'b>(env_var: &'a str, default: &'b str) -> String {
     env::var(env_var).unwrap_or(default.to_string())

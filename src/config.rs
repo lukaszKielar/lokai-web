@@ -16,7 +16,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             database_url: get_env_var("DATABASE_URL", "sqlite://db.sqlite3"),
             ollama_url: get_env_var("OLLAMA_URL", "http://host.docker.internal:11434"),

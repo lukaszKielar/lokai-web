@@ -13,5 +13,6 @@ WORKDIR /lokai
 COPY --from=builder /lokai/target/release/lokai .
 COPY --from=builder /lokai/static/ ./static/
 COPY ./templates/ ./templates/
+COPY ./migrations/ ./migrations/
 
 ENTRYPOINT [ "/lokai/lokai" ]

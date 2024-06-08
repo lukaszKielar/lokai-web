@@ -17,8 +17,9 @@ use axum::handler::Handler;
 use axum::routing::{delete, get, post};
 use axum::Router;
 use config::CONFIG;
+use sqlx::migrate::{MigrateDatabase, Migrator};
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::SqlitePool;
+use sqlx::{Sqlite, SqlitePool};
 use tower_http::services::{ServeDir, ServeFile};
 use tracing::info;
 
@@ -31,10 +32,18 @@ async fn main() -> Result<()> {
         .init();
 
     let state = {
+        create_db(&CONFIG.database_url).await;
+        let migrator = Migrator::new(std::path::Path::new("./migrations"))
+            .await
+            .expect("Cannot create database migrator");
         let sqlite: SqlitePool = SqlitePoolOptions::new()
             .connect(&CONFIG.database_url)
             .await
-            .expect("Could not make pool.");
+            .expect("Could not make pool");
+        migrator
+            .run(&sqlite)
+            .await
+            .expect("Cannot run database migrations");
 
         AppState {
             sqlite: sqlite,
@@ -74,4 +83,15 @@ async fn main() -> Result<()> {
         .expect("Cannot start server");
 
     Ok(())
+}
+
+async fn create_db<'a>(db_url: &'a str) {
+    if !sqlx::Sqlite::database_exists(db_url)
+        .await
+        .expect("Cannot check if database exists")
+    {
+        sqlx::Sqlite::create_database(db_url)
+            .await
+            .expect("Cannot create database");
+    }
 }

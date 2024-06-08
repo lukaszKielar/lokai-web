@@ -30,7 +30,6 @@
                 <!-- TODO: show red ring on empty prompt submit attempt -->
                 <!-- TODO: show blue ring on focus -->
                 <!-- Use px notation in Tailwind to make it easier to use correct values in _hyperscript -->
-                <!-- 208px equals 52 units in Tailwind -->
                 <textarea
                     id="user-prompt-ta"
                     name="user_prompt"
@@ -38,7 +37,7 @@
                     placeholder="Message LokAI..."
                     autofocus="autofocus"
                     required
-                    class="m-0 w-full resize-none border-0 my-2 pr-10 bg-transparent pl-2 h-[24px] max-h-[208px] overflow-y-auto"
+                    class="m-0 w-full resize-none border-0 my-2 pr-10 bg-transparent pl-2 h-[24px] max-h-[72px] overflow-y-auto"
                     _="
                     on keyup
                         event.preventDefault()
@@ -52,8 +51,8 @@
                             end
                         otherwise
                             measure my scrollHeight
-                            if scrollHeight > 208
-                                set *height to 208 px
+                            if scrollHeight > 72
+                                set *height to 72 px
                             otherwise
                                 set *height to scrollHeight px
                             end

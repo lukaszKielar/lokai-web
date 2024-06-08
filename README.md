@@ -10,7 +10,46 @@ Project has many flaws, but I had tonne of fun working on it, and I hope it may 
 
 <video src="https://github.com/lukaszKielar/lokai/assets/31779738/2abbab35-5add-45c9-a8e6-80de75b6549f"></video>
 
-## Prepare env
+## Running app
+
+Before you run the app, make sure you have `Ollama` [installed](https://github.com/ollama/ollama).
+
+When it's ready run:
+
+```bash
+ollama serve
+# or with docker
+docker run -v ~/.docker-share/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama # runs once
+docker stop ollama
+docker start ollama
+```
+
+By default LokAI will use `phi3:3.8b` LLM model, so if you don't want to wait ages for the first response, you should download the model beforehand:
+
+```bash
+ollama pull phi3:3.8b
+```
+
+**Docker** is recommended way to run LokAI locally. In order to make it work build and run an image:
+
+```bash
+docker build -t lokai .
+docker run --name lokai -p 3000:3000 lokai
+```
+
+Environment variables you can define:
+
+| Env variable              | Default value                       | Description                                 |
+| ------------------------- | ----------------------------------- | ------------------------------------------- |
+| `DATABASE_URL`            | `sqlite://db.sqlite3`               | URL of Sqlite database                      |
+| `OLLAMA_URL`              | `http://host.docker.internal:11434` | URL of Ollama server                        |
+| `LOKAI_DEFAULT_LLM_MODEL` | `phi3:3.8b`                         | Default LLM model used for new conversation |
+| `LOKAI_HOST`              | `0.0.0.0`                           | LokAI host                                  |
+| `LOKAI_PORT`              | `3000`                              | LokAI port                                  |
+
+Once it's done, navigate to http://localhost:3000 and start playing around with LokAI.
+
+## Development
 
 ### DevContainers
 
@@ -27,35 +66,13 @@ To be able to develop and run the app locally, you need to install following:
 
 You can sneak peak commands in [.devcontainer/Dockerfile](.devcontainer/Dockerfile).
 
-## Running app
-
-Before you run the app, make sure you have `Ollama` [installed](https://github.com/ollama/ollama).
-
-When it's ready run:
-
-```bash
-ollama serve
-# or with docker
-docker run -v ~/.docker-share/ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama # runs once
-docker stop ollama
-docker start ollama
-```
-
-So far the name of the LLM model is hardcoded in the app (`phi3:3.8b`), and if you don't want to wait ages for the first response, you should download the model beforehand:
-
-```bash
-ollama pull phi3:3.8b
-```
-
-To run the project locally with hot-reloading, type:
+Once you have everything installed you can run the app in hot-reloading mode:
 
 ```bash
 cargo watch -x run
 ```
 
-Once it's done, navigate to http://localhost:3000 and start playing around with it.
-
-## Unit tests
+### Unit tests
 
 Simply run:
 

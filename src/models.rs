@@ -134,6 +134,25 @@ impl Conversation {
     }
 }
 
+#[derive(FromRow, Deserialize, Debug, Clone)]
+pub struct ConversationSettings {
+    pub id: Uuid,
+    pub llm_model: String,
+    pub conversation_id: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+impl ConversationSettings {
+    pub fn new(llm_model: String, conversation_id: Uuid) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            llm_model,
+            conversation_id,
+            created_at: Utc::now(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;

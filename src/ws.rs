@@ -14,7 +14,7 @@ use crate::{
     error::Result,
     frontend::templates::{ChatAreaAppendMessage, ChatAreaSwapMessage},
     ollama::{OllamaChatParams, OllamaChatResponseStream},
-    LOKAI_DEFAULT_LLM_MODEL,
+    CONFIG,
 };
 use crate::{models, state::AppState};
 
@@ -139,7 +139,6 @@ async fn inference(
         conversation_id = user_prompt.conversation_id.to_string(),
         "start inference"
     );
-    let client = state.reqwest_client;
 
     // SAFETY: conversation exists at this point as we navigated from web browser and router validated this rule
     let conversation = db::get_conversation(state.sqlite.clone(), user_prompt.conversation_id)
@@ -165,13 +164,14 @@ async fn inference(
     }
 
     let params = OllamaChatParams {
-        model: LOKAI_DEFAULT_LLM_MODEL.to_string(),
+        model: CONFIG.lokai_default_llm_model.to_string(),
         messages: messages.into_iter().map(|m| m.into()).collect(),
         stream: true,
     };
 
-    let mut stream = client
-        .post("http://host.docker.internal:11434/api/chat")
+    let mut stream = state
+        .reqwest_client
+        .post(format!("{}/api/chat", CONFIG.ollama_url))
         .json(&params)
         .send()
         .await?
@@ -189,9 +189,18 @@ async fn inference(
         )
         .await?;
 
+    let mut is_first_chunk = true;
     while let Some(chunk) = stream.next().await {
         if let Ok(chunk) = chunk {
-            assistant_response.update_content(&chunk.message.content);
+            let msg_content = &chunk.message.content;
+            let msg_content = if is_first_chunk {
+                is_first_chunk = false;
+                msg_content.trim_start()
+            } else {
+                msg_content
+            };
+
+            assistant_response.update_content(msg_content);
 
             if inference_response_tx
                 .send(

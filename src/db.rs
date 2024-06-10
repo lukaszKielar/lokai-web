@@ -3,7 +3,7 @@ use tracing::debug;
 use uuid::Uuid;
 
 use crate::error::Result;
-use crate::models::{Conversation, Message};
+use crate::models::{Conversation, ConversationSettings, Message};
 
 pub async fn get_conversation_messages(
     sqlite: SqlitePool,
@@ -90,12 +90,16 @@ ORDER BY created_at ASC
 pub async fn create_conversation(
     sqlite: SqlitePool,
     conversation: Conversation,
+    llm_model: String,
 ) -> Result<Conversation> {
     debug!(
         conversation_id = conversation.id.to_string(),
         "saving conversation to db"
     );
 
+    let mut transaction = sqlite.begin().await?;
+
+    let settings = ConversationSettings::new(llm_model, conversation.id);
     let new_conversation: Conversation = sqlx::query_as(
         r#"
 INSERT INTO conversations ( id, name, created_at )
@@ -106,7 +110,21 @@ RETURNING *
     .bind(conversation.id)
     .bind(conversation.name)
     .bind(conversation.created_at)
-    .fetch_one(&sqlite)
+    .fetch_one(&mut *transaction)
+    .await?;
+
+    let _: ConversationSettings = sqlx::query_as(
+        r#"
+INSERT INTO conversation_settings ( id, llm_model, conversation_id, created_at )
+VALUES ( ?1, ?2, ?3, ?4 )
+RETURNING *
+        "#,
+    )
+    .bind(settings.id)
+    .bind(settings.llm_model)
+    .bind(settings.conversation_id)
+    .bind(settings.created_at)
+    .fetch_one(&mut *transaction)
     .await?;
 
     debug!(
@@ -114,12 +132,15 @@ RETURNING *
         "conversation saved to db"
     );
 
+    transaction.commit().await?;
+
     Ok(new_conversation)
 }
 
 pub async fn create_conversation_if_not_exists(
     sqlite: SqlitePool,
     conversation: Conversation,
+    llm_model: String,
 ) -> Result<Conversation> {
     if let Some(conversation) = get_conversation(sqlite.clone(), conversation.id).await? {
         debug!(
@@ -128,7 +149,7 @@ pub async fn create_conversation_if_not_exists(
         );
         return Ok(conversation);
     } else {
-        return create_conversation(sqlite, conversation).await;
+        return create_conversation(sqlite, conversation, llm_model).await;
     }
 }
 
@@ -177,6 +198,8 @@ mod tests {
     use super::*;
     use sqlx::Row;
 
+    static LLM_MODEL: &'static str = "test-model";
+
     async fn table_count(sqlite: SqlitePool, table_name: &str) -> Result<i64> {
         let query = format!("SELECT COUNT(*) FROM {table_name}");
         let count = sqlx::query(&query)
@@ -191,13 +214,19 @@ mod tests {
     async fn test_create_conversation_ok(pool: sqlx::SqlitePool) -> Result<()> {
         // given:
         assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 0);
 
         // when:
-        let new_conversation =
-            create_conversation(pool.clone(), Conversation::new("name".to_string())).await?;
+        let new_conversation = create_conversation(
+            pool.clone(),
+            Conversation::new("name".to_string()),
+            LLM_MODEL.to_string(),
+        )
+        .await?;
 
         // then:
-        assert_eq!(table_count(pool, "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool, "conversation_settings").await?, 1);
         assert_eq!(new_conversation.name, "name");
 
         Ok(())
@@ -206,9 +235,14 @@ mod tests {
     #[sqlx::test]
     async fn test_create_message_ok(pool: sqlx::SqlitePool) -> Result<()> {
         // given:
-        let conversation =
-            create_conversation(pool.clone(), Conversation::new("name".to_string())).await?;
+        let conversation = create_conversation(
+            pool.clone(),
+            Conversation::new("name".to_string()),
+            LLM_MODEL.to_string(),
+        )
+        .await?;
         assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 1);
         assert_eq!(table_count(pool.clone(), "messages").await?, 0);
 
         // when:
@@ -230,8 +264,12 @@ mod tests {
     #[sqlx::test]
     async fn test_get_conversation_ok(pool: sqlx::SqlitePool) -> Result<()> {
         // given:
-        let conversation =
-            create_conversation(pool.clone(), Conversation::new("name".to_string())).await?;
+        let conversation = create_conversation(
+            pool.clone(),
+            Conversation::new("name".to_string()),
+            LLM_MODEL.to_string(),
+        )
+        .await?;
 
         // when:
         let maybe_conversation = get_conversation(pool, conversation.id).await?;
@@ -262,15 +300,22 @@ mod tests {
     ) -> Result<()> {
         // given:
         let conversation = Conversation::new("test".to_string());
-        let _ = create_conversation(pool.clone(), conversation.clone()).await?;
+        let _ =
+            create_conversation(pool.clone(), conversation.clone(), LLM_MODEL.to_string()).await?;
         assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 1);
 
         // when:
-        let already_existing_conversation =
-            create_conversation_if_not_exists(pool.clone(), conversation.clone()).await?;
+        let already_existing_conversation = create_conversation_if_not_exists(
+            pool.clone(),
+            conversation.clone(),
+            LLM_MODEL.to_string(),
+        )
+        .await?;
 
         // then:
-        assert_eq!(table_count(pool, "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool, "conversation_settings").await?, 1);
         assert_eq!(conversation, already_existing_conversation);
 
         Ok(())
@@ -282,14 +327,19 @@ mod tests {
     ) -> Result<()> {
         // given:
         assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 0);
 
         // when:
-        let _ =
-            create_conversation_if_not_exists(pool.clone(), Conversation::new("test".to_string()))
-                .await?;
+        let _ = create_conversation_if_not_exists(
+            pool.clone(),
+            Conversation::new("test".to_string()),
+            LLM_MODEL.to_string(),
+        )
+        .await?;
 
         // then:
-        assert_eq!(table_count(pool, "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool, "conversation_settings").await?, 1);
 
         Ok(())
     }
@@ -298,15 +348,18 @@ mod tests {
     async fn test_delete_conversation_which_exist_ok(pool: sqlx::SqlitePool) -> Result<()> {
         // given:
         let conversation = Conversation::new("test".to_string());
-        let _ = create_conversation(pool.clone(), conversation.clone()).await?;
+        let _ =
+            create_conversation(pool.clone(), conversation.clone(), LLM_MODEL.to_string()).await?;
         assert_eq!(table_count(pool.clone(), "conversations").await?, 1);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 1);
 
         // when:
         let maybe_deleted_conversation =
             delete_conversation(pool.clone(), conversation.id.clone()).await?;
 
         // then:
-        assert_eq!(table_count(pool, "conversations").await?, 0);
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+        assert_eq!(table_count(pool, "conversation_settings").await?, 1);
         assert!(maybe_deleted_conversation.is_some());
         assert_eq!(conversation, maybe_deleted_conversation.unwrap());
 
@@ -317,12 +370,14 @@ mod tests {
     async fn test_delete_conversation_which_doesnt_exist_ok(pool: sqlx::SqlitePool) -> Result<()> {
         // given:
         assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+        assert_eq!(table_count(pool.clone(), "conversation_settings").await?, 0);
 
         // when:
         let maybe_deleted_conversation = delete_conversation(pool.clone(), Uuid::new_v4()).await?;
 
         // then:
-        assert_eq!(table_count(pool, "conversations").await?, 0);
+        assert_eq!(table_count(pool.clone(), "conversations").await?, 0);
+        assert_eq!(table_count(pool, "conversation_settings").await?, 0);
         assert!(maybe_deleted_conversation.is_none());
 
         Ok(())

@@ -59,7 +59,7 @@ pub mod handlers {
     use tracing::error;
     use uuid::Uuid;
 
-    use crate::{db, models, state::AppState};
+    use crate::{config::CONFIG, db, models, state::AppState};
 
     pub async fn index(state: State<AppState>) -> impl IntoResponse {
         let conversations = db::get_conversations(state.sqlite.clone()).await.unwrap();
@@ -116,9 +116,14 @@ pub mod handlers {
     ) -> impl IntoResponse {
         let new_conversation = models::Conversation::new(new_conversation_form.conversation_name);
         // TODO: implement into response for my error
-        let new_conversation = db::create_conversation(sqlite, new_conversation)
-            .await
-            .unwrap();
+        // TODO: read global default LLM model from db
+        let new_conversation = db::create_conversation(
+            sqlite,
+            new_conversation,
+            CONFIG.lokai_default_llm_model.clone(),
+        )
+        .await
+        .unwrap();
 
         let mut headers = HeaderMap::new();
         headers.insert(

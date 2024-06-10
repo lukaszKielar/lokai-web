@@ -1,5 +1,5 @@
 <div
-    class="flex flex-col absolute bottom-0 right-0 w-full bg-gradient-to-b from-transparent to-30% to-gray-800 p-2"
+    class="flex flex-col absolute bottom-0 right-0 w-full bg-gradient-to-b from-transparent to-10% to-gray-800 p-2"
 >
     <div
         id="user-prompt-div"
@@ -20,34 +20,16 @@
             hx-disabled-elt="textarea, button"
             _="
             on submit
-                set #user-prompt-ta.value to ''
-                then set #user-prompt-ta's *height to 24 px
-                then add @disabled to #user-prompt-btn
-            on keyup from #user-prompt-ta
-                if event.keyCode is 13 and not event.shiftKey
-                    set text to #user-prompt-ta.value
-                    js(text)
-                        return text.trim()
-                    end
-                    set #user-prompt-ta.value to it
-                    if #user-prompt-ta.value === ''
-                        halt the event
-                        then set #user-prompt-ta's *height to 24 px
-                        then add @disabled to #user-prompt-btn
-                    otherwise
-                        trigger submit on me
-                    end
-                otherwise
-                    halt the event
+                set #user-prompt-ta.value to '' then
+                trigger keyup on #user-prompt-ta
             "
         >
             <div
-                class="flex flex-col w-full py-2 flex-grow border border-gray-900/10 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
+                class="flex flex-col w-full flex-grow border border-gray-900/10 bg-gray-700 rounded-md shadow-[0_0_15px_rgba(0,0,0,0.10)]"
             >
                 <!-- TODO: show red ring on empty prompt submit attempt -->
                 <!-- TODO: show blue ring on focus -->
                 <!-- Use px notation in Tailwind to make it easier to use correct values in _hyperscript -->
-                <!-- 208px equals 52 units in Tailwind -->
                 <textarea
                     id="user-prompt-ta"
                     name="user_prompt"
@@ -55,21 +37,30 @@
                     placeholder="Message LokAI..."
                     autofocus="autofocus"
                     required
-                    class="m-0 w-full resize-none border-0 p-0 pr-10 bg-transparent pl-2 h-[24px] max-h-[216px] overflow-y-auto"
+                    class="m-0 w-full resize-none border-0 my-2 pr-10 bg-transparent pl-2 h-[24px] max-h-[72px] overflow-y-auto"
                     _="
-                    on input
+                    on keyup
+                        event.preventDefault()
                         set *height to 24 px
-                        then measure my scrollHeight
-                        if scrollHeight > 216
-                            set *height to 216 px
-                        else
-                            set *height to scrollHeight px
-                        end
-                        if my value === ''
-                            add @disabled to #user-prompt-btn
-                        else
-                            remove @disabled from #user-prompt-btn
-                        end
+                        if event's code is 'Enter' and not event's shiftKey
+                            if #user-prompt-btn.disabled and my value.trim() === ''
+                                set my value to ''
+                            otherwise
+                                set my value to my value.trim()
+                                trigger submit on #user-prompt-form
+                            end
+                        otherwise
+                            measure my scrollHeight
+                            if scrollHeight > 72
+                                set *height to 72 px
+                            otherwise
+                                set *height to scrollHeight px
+                            end
+                            if my value.trim() === ''
+                                add @disabled to #user-prompt-btn
+                            otherwise
+                                remove @disabled from #user-prompt-btn
+                            end
                     "
                 ></textarea>
             </div>

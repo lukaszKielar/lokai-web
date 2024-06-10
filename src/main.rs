@@ -19,7 +19,7 @@ use axum::Router;
 use config::CONFIG;
 use sqlx::migrate::{MigrateDatabase, Migrator};
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::{Sqlite, SqlitePool};
+use sqlx::SqlitePool;
 use tower_http::services::{ServeDir, ServeFile};
 use tracing::info;
 

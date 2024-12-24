@@ -1,7 +1,8 @@
 {
     "[dockercompose]": {
         "editor.formatOnSave": true,
-        "editor.tabSize": 4
+        "editor.tabSize": 4,
+        "prettier.tabWidth": 4
     },
     "[dockerfile]": {
         "editor.formatOnSave": true

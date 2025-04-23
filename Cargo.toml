@@ -1,6 +1,6 @@
 [package]
 name = "lokai"
-authors = ["Lukasz Kielar <kielar.lukasz@hotmail.com>"]
+authors = ["Lukasz Kielar <31779738+lukaszKielar@users.noreply.github.com>"]
 version = "0.1.0"
 edition = "2021"
 license = "MIT"

@@ -24,10 +24,10 @@ docker stop ollama
 docker start ollama
 ```
 
-By default LokAI will use `phi3:3.8b` LLM model, so if you don't want to wait ages for the first response, you should download the model beforehand:
+By default LokAI will use `gemma3:1b` LLM model, so if you don't want to wait ages for the first response, you should download the model beforehand:
 
 ```bash
-ollama pull phi3:3.8b
+ollama pull gemma3:1b
 ```
 
 **Docker** is recommended way to run LokAI locally. In order to make it work build and run an image:
@@ -43,7 +43,7 @@ Environment variables you can define:
 | ------------------------- | ----------------------------------- | ------------------------------------------- |
 | `DATABASE_URL`            | `sqlite://db.sqlite3`               | URL of Sqlite database                      |
 | `OLLAMA_URL`              | `http://host.docker.internal:11434` | URL of Ollama server                        |
-| `LOKAI_DEFAULT_LLM_MODEL` | `phi3:3.8b`                         | Default LLM model used for new conversation |
+| `LOKAI_DEFAULT_LLM_MODEL` | `gemma3:1b`                         | Default LLM model used for new conversation |
 | `LOKAI_HOST`              | `0.0.0.0`                           | LokAI host                                  |
 | `LOKAI_PORT`              | `3000`                              | LokAI port                                  |
 

@@ -20,7 +20,7 @@ impl Config {
         Self {
             database_url: get_env_var("DATABASE_URL", "sqlite://db.sqlite3"),
             ollama_url: get_env_var("OLLAMA_URL", "http://host.docker.internal:11434"),
-            lokai_default_llm_model: get_env_var("LOKAI_DEFAULT_LLM_MODEL", "phi3:3.8b"),
+            lokai_default_llm_model: get_env_var("LOKAI_DEFAULT_LLM_MODEL", "gemma3:1b"),
             lokai_host: get_env_var("LOKAI_HOST", "0.0.0.0"),
             lokai_port: get_env_var("LOKAI_PORT", "3000"),
         }
